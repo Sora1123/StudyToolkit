@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1",
+    "front": "What does DOM stand for?",
+    "back": "Document Object Model"
+  },
+  {
+    "id": "2",
+    "front": "What is the capital of France?",
+    "back": "Paris"
+  },
+  {
+    "id": "3",
+    "front": "What is the freezing point of water?",
+    "back": "0°C or 32°F"
+  },
+  {
+    "id": "1788571095117",
+    "front": "test",
+    "back": "test"
+  }
+]

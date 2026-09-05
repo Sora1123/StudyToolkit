@@ -35,7 +35,7 @@ export default function App() {
 
   const fetchCards = async () => {
     try {
-      const res = await fetch("/api/cards");
+      const res = await fetch("/api/Flashcards");
       const data = await res.json();
       setCards(data);
     } catch (e) {
@@ -45,12 +45,12 @@ export default function App() {
     }
   };
 
-  const addCard = async (e: React.FormEvent) => {
+  const addCard = async (e: SubmitEvent) => {
     e.preventDefault();
     if (!newFront.trim() || !newBack.trim()) return;
 
     try {
-      const res = await fetch("/api/cards", {
+      const res = await fetch("/api/Flashcards", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +68,7 @@ export default function App() {
 
   const deleteCard = async (id: string) => {
     try {
-      await fetch(`/api/cards/${id}`, { method: "DELETE" });
+      await fetch(`/api/Flashcards/${id}`, { method: "DELETE" });
       setCards((prev) => prev.filter((c) => c.id !== id));
       if (currentIndex >= cards.length - 1) {
         setCurrentIndex(Math.max(0, cards.length - 2));
@@ -104,11 +104,6 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 w-full">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-indigo-600 font-semibold text-lg tracking-tight">
-            <Brain className="w-6 h-6" />
-            <span>Flashcards</span>
-          </div>
-
           <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => {
@@ -171,7 +166,7 @@ export default function App() {
                 </div>
 
                 <div
-                  className="w-full aspect-[4/3] perspective-1000 cursor-pointer"
+                  className="w-full aspect-4/3 perspective-1000 cursor-pointer"
                   onClick={() => setIsFlipped(!isFlipped)}
                 >
                   <motion.div
