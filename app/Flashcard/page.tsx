@@ -16,7 +16,6 @@ export default function Home() {
     setCards,
     currentIndex,
     setCurrentIndex,
-    loading,
   } = useFlashcard();
 
   return (
@@ -53,11 +52,7 @@ export default function Home() {
         </header>
 
         <main className="max-w-4xl mx-auto px-4 py-12 flex justify-center">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : mode === "study" ? (
+          {mode === "study" ? (
             <div className="w-full max-w-xl flex flex-col items-center">
               {cards.length === 0 ? (
                 <div className="text-center py-20 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm w-full">

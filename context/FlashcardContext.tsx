@@ -23,26 +23,26 @@ const FlashcardContext = createContext<FlashcardContextType | undefined>(
 );
 
 export const FlashcardProvider = ({ children }) => {
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    fetchCards();
-  }, []);
+  // useEffect(() => {
+  //   fetchCards();
+  // }, []);
 
-  const fetchCards = async () => {
-    try {
-      const res = await fetch("/api/Flashcards");
-      const data = await res.json();
-      setCards(data);
-    } catch (e) {
-      console.error("Failed to fetch cards:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchCards = async () => {
+  //   try {
+  //     const res = await fetch("/api/Flashcards");
+  //     const data = await res.json();
+  //     setCards(data);
+  //   } catch (e) {
+  //     console.error("Failed to fetch cards:", e);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <FlashcardContext.Provider
@@ -53,7 +53,7 @@ export const FlashcardProvider = ({ children }) => {
         setCards,
         currentIndex,
         setCurrentIndex,
-        loading
+        // loading
       }}
     >
       {children}

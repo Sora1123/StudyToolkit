@@ -1,5 +1,6 @@
 import Link from "next/link";
-import Timer from "@/app/components/Timer";
+import Timer from "./components/Timer";
+import Flashcard from "./components/Flashcard/Flashcard";
 
 export default function Home() {
   return (
@@ -10,9 +11,12 @@ export default function Home() {
         </Link>
         <Timer />
       </div>
-      <Link className="flex justify-center" href="/Flashcard">
-        To Flashcard
-      </Link>
+      <div className="flex flex-col items-center gap-6">
+        <Link className="flex justify-center" href="/Flashcard">
+          To Flashcard
+        </Link>
+        <Flashcard />
+      </div>
     </>
   );
 }
