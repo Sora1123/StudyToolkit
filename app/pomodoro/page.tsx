@@ -1,5 +1,3 @@
-'use client'
-
 import Timer from "@/app/components/Timer";
 import Link from 'next/link';
 
