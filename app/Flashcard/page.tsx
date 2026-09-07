@@ -83,24 +83,7 @@ export default function Home() {
             />
           )}
         </main>
-
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              .perspective-1000 {
-                perspective: 1000px;
-              }
-              .preserve-3d {
-                transform-style: preserve-3d;
-              }
-              .backface-hidden {
-                backface-visibility: hidden;
-              }
-            `,
-          }}
-        />
       </div>
-
       <Link href="/">To home</Link>
     </>
   );
