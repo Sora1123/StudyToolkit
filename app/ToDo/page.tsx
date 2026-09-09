@@ -1,11 +1,11 @@
-import Timer from "@/app/components/Timer";
 import Link from 'next/link';
+import ToDo from '../components/ToDo';
 
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center gap-6">
-        <Timer />
+        <ToDo />
         <Link 
           href="/" 
           className="text-sm text-slate-500 hover:text-slate-800 underline underline-offset-4 transition-colors"

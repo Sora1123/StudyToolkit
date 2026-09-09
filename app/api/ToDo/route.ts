@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs";
 import { NextResponse } from "next/server";
 
-const dataFilePath = path.join(process.cwd(), "public/Flashcard.json");
+const dataFilePath = path.join(process.cwd(), "public/ToDo.json");
 
 // Simple helper to read DB
 async function readDb() {
@@ -21,22 +21,21 @@ async function writeDb(data: any) {
 
 // API Routes
 export async function GET() {
-  const cards = await readDb();
-  return NextResponse.json(cards);
+  const tasks = await readDb();
+  return NextResponse.json(tasks);
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const cards = await readDb();
-  const newCard = {
+  const tasks = await readDb();
+  const newTask = {
     id: Date.now().toString(),
-    front: body.front,
-    back: body.back,
+    task: body.task,
   };
 
-  cards.push(newCard);
-  await writeDb(cards);
+  tasks.push(newTask);
+  await writeDb(tasks);
 
-  return NextResponse.json(newCard, { status: 201 });
+  return NextResponse.json(newTask, { status: 201 });
 }

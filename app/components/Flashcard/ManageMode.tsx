@@ -8,7 +8,12 @@ interface Flashcard {
   back: string;
 }
 
-export default function ManageMode({cards, setCards, currentIndex, setCurrentIndex}) {
+export default function ManageMode({
+  cards,
+  setCards,
+  currentIndex,
+  setCurrentIndex,
+}) {
   // Add state
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
@@ -33,7 +38,7 @@ export default function ManageMode({cards, setCards, currentIndex, setCurrentInd
     }
   };
 
-    const deleteCard = async (id: string) => {
+  const deleteCard = async (id: string) => {
     try {
       await fetch(`/api/Flashcards/${id}`, { method: "DELETE" });
       setCards((prev) => prev.filter((c) => c.id !== id));

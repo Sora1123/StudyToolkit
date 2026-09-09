@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Timer from "./components/Timer";
 import Flashcard from "./components/Flashcard/Flashcard";
+import ToDo from "./components/ToDo";
 
 export default function Home() {
   return (
@@ -16,6 +17,12 @@ export default function Home() {
           To Flashcard
         </Link>
         <Flashcard />
+      </div>
+      <div className="flex flex-col items-center gap-6">
+        <Link className="flex justify-center" href="/ToDo">
+          To ToDo
+        </Link>
+        <ToDo />
       </div>
     </>
   );
