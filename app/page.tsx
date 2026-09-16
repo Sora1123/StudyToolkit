@@ -2,6 +2,7 @@ import Timer from "./components/Timer";
 import Flashcard from "./components/Flashcard/Flashcard";
 import ToDo from "./components/ToDo";
 import ComponentRendering from "./components/ComponentRendering";
+import Calculator from "./components/Calculator";
 
 export default function Home() {
   return (
@@ -26,6 +27,13 @@ export default function Home() {
         appName={"ToDo"}
       >
         <ToDo />
+      </ComponentRendering>
+      <ComponentRendering
+        defaultPos={{ x: 50, y: 450 }}
+        defaultSize={{ width: 320, height: 400 }}
+        appName={"Calculator"}
+      >
+        <Calculator />
       </ComponentRendering>
     </main>
   );
