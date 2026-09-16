@@ -2,11 +2,6 @@
 
 import { Rnd } from "react-rnd";
 
-interface position {
-  x: number;
-  y: number;
-}
-
 export default function DraggableItem({
   children,
   defaultPos = { x: 0, y: 0 },
@@ -31,7 +26,7 @@ export default function DraggableItem({
       }}
     >
       <div className="cursor-grab active:cursor-grabbing p-2 bg-slate-900/60 text-xs text-slate-400 select-none flex justify0between items-center border-b borders-late-700">
-        <span>Drag Haeder</span>
+        <span>Drag Header</span>
         <span className="text-[10px] opacity-60">Resize from conrdners</span>
       </div>
 
