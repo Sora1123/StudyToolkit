@@ -25,6 +25,7 @@ export default function Calculator() {
   const handleCalculate = () => {
     try {
       const output = evaluateTex(expression);
+    //   console.log(evaluateTex("\\sum_{n=1}^{20}n").evaluated)
       setAnswer(output.evaluated);
     } catch (e) {
       setAnswer("Invalid expression");
@@ -50,25 +51,15 @@ export default function Calculator() {
   };
 
   return (
-    <div className="caret-red-500">
-      <form className="bg-slate-700">
-        <input
-          value={expression}
-          onChange={(e) => setExpression(e.target.value)}
-          className="border-1"
-          onKeyDown={handleKeyDown}
-        />
-      </form>
-      <div className="bg-amber-100">
-        <EditableMathField
-          latex={expression}
-          onChange={handleMathChange}
-          onKeyDown={handleKeyDown}
-          config={{ autoCommands: "sqrt" }}
-          className="caret-red-500 text-blue-600"
-        />
-        <p className="text-blue-600">{answer}</p>
-      </div>
-    </div>
+    <>
+      <EditableMathField
+        latex={expression}
+        onChange={handleMathChange}
+        onKeyDown={handleKeyDown}
+        config={{ autoCommands: "sqrt" }}
+        className="[&_.mq-cursor]:!border-l-red-500 text-blue-100 border-1"
+      />
+      <p className="text-blue-600">{answer}</p>
+    </>
   );
 }
