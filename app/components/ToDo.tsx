@@ -2,10 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import { FormEvent } from "react";
+
+interface Task {
+  id: string;
+  task: string;
+}
 
 export default function ToDo() {
   const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
 
   useEffect(() => {
@@ -29,7 +35,7 @@ export default function ToDo() {
     if (e) e.preventDefault();
     if (!newTask.trim()) return;
     try {
-      const res = await fetch("api/ToDo", {
+      const res = await fetch("/api/ToDo", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

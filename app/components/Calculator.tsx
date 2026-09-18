@@ -45,7 +45,7 @@ export default function Calculator() {
     }
   };
 
-  const handleMathChange = (mathField) => {
+  const handleMathChange = (mathField: any) => {
     const currentLatex = mathField.latex();
     setExpression(currentLatex);
   };

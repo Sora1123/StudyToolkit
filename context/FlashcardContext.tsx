@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 
 interface Flashcard {
   id: string;
@@ -8,21 +8,20 @@ interface Flashcard {
   back: string;
 }
 
-interface FlashcardContextType {
+export interface FlashcardContextType {
   isFlipped: boolean;
   setIsFlipped: (flipped: boolean | ((prev: boolean) => boolean)) => void;
   cards: Flashcard[];
   setCards: React.Dispatch<React.SetStateAction<Flashcard[]>>;
   currentIndex: number;
   setCurrentIndex: React.Dispatch<React.SetStateAction<number>>;
-  loading: boolean;
 }
 
 const FlashcardContext = createContext<FlashcardContextType | undefined>(
   undefined,
 );
 
-export const FlashcardProvider = ({ children }) => {
+export const FlashcardProvider = ({ children }: { children: ReactNode }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);

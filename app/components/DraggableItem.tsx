@@ -1,12 +1,19 @@
 "use client";
 
 import { Rnd } from "react-rnd";
+import { ReactNode } from "react";
+
+interface DraggableItemProps {
+  children?: ReactNode;
+  defaultPos?: { x: number; y: number };
+  defaultSize?: { width: number; height: number };
+}
 
 export default function DraggableItem({
   children,
   defaultPos = { x: 0, y: 0 },
   defaultSize = { width: 320, height: 300 },
-}) {
+}: DraggableItemProps) {
   return (
     <Rnd
       default={{

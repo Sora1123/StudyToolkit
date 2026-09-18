@@ -7,18 +7,24 @@ interface Flashcard {
   front: string;
   back: string;
 }
+export interface ManageModeType {
+  cards: Flashcard[];
+  setCards: React.Dispatch<React.SetStateAction<Flashcard[]>>;
+  currentIndex: number;
+  setCurrentIndex: React.Dispatch<React.SetStateAction<number>>;
+}
 
 export default function ManageMode({
   cards,
   setCards,
   currentIndex,
   setCurrentIndex,
-}) {
+}: ManageModeType) {
   // Add state
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
 
-  const addCard = async (e: SubmitEvent) => {
+  const addCard = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newFront.trim() || !newBack.trim()) return;
     try {
