@@ -15,7 +15,7 @@ export default function Timer() {
 
     const interval = setInterval(() => {
       setSeconds((prev) => prev - 1);
-    }, 10);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [isRunning]);

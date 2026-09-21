@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@latex-math/core": "file:../latex-math/packages/core",
+    "@latex-math/react": "file:../latex-math/packages/react",
     "evaluatex": "^2.2.0",
     "express": "^5.2.1",
     "lucide-react": "^1.39.0",
