@@ -2,7 +2,7 @@ import Timer from "./components/Timer";
 import Flashcard from "./components/Flashcard/Flashcard";
 import ToDo from "./components/ToDo";
 import ComponentRendering from "./components/ComponentRendering";
-import Calculator from "./components/Calculator";
+import Calculator from "./components/Calculator/Calculator";
 
 export default function Home() {
   return (

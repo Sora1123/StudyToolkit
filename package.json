@@ -9,9 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@latex-math/core": "file:../latex-math/packages/core",
-    "@latex-math/react": "file:../latex-math/packages/react",
-    "evaluatex": "^2.2.0",
+    "@latex-math/core": "^0.1.2",
+    "@latex-math/react": "^1.2.2",
     "express": "^5.2.1",
     "lucide-react": "^1.39.0",
     "mathjs": "^15.2.0",
@@ -19,10 +18,7 @@
     "next": "^16.3.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-latex-next": "^3.0.0",
-    "react-mathquill": "^1.0.4",
-    "react-rnd": "^10.5.3",
-    "tex-math-parser": "^2.0.5"
+    "react-rnd": "^10.5.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -36,3 +32,4 @@
     "typescript": "^5"
   }
 }
+
