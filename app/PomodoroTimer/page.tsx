@@ -1,18 +1,16 @@
 import Timer from "@/app/components/Timer";
-import Link from 'next/link';
+import PageHeader from "@/app/components/ui/PageHeader";
 
-export default function Home() {
+export default function Page() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-6">
+    <div className="flex min-h-full flex-col">
+      <PageHeader
+        title="Pomodoro Timer"
+        description="Focus in timed study and rest intervals."
+      />
+      <div className="flex flex-1 items-center justify-center p-6">
         <Timer />
-        <Link 
-          href="/" 
-          className="text-sm text-slate-500 hover:text-slate-800 underline underline-offset-4 transition-colors"
-        >
-          ← Back to home
-        </Link>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Trash, Edit3 } from "lucide-react";
 
@@ -20,7 +22,6 @@ export default function ManageMode({
   currentIndex,
   setCurrentIndex,
 }: ManageModeType) {
-  // Add state
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
 
@@ -30,9 +31,7 @@ export default function ManageMode({
     try {
       const res = await fetch("/api/Flashcards", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ front: newFront, back: newBack }),
       });
       const data = await res.json();
@@ -56,54 +55,57 @@ export default function ManageMode({
     }
   };
 
+  const fieldClass =
+    "w-full resize-none rounded-md border border-line bg-surface-2 px-3.5 py-2.5 text-sm outline-none transition placeholder:text-faint focus:border-accent focus:bg-surface";
+
   return (
-    <div className="w-full grid md:grid-cols-5 gap-8">
-      <div className="md:col-span-2 space-y-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-6 text-gray-900">
-            <Edit3 className="w-5 h-5 text-indigo-600" />
-            <h2 className="font-semibold text-lg tracking-tight">
-              Create Card
+    <div className="grid w-full gap-8 md:grid-cols-5">
+      <div className="space-y-6 md:col-span-2">
+        <div className="rounded-lg border border-line bg-surface p-6">
+          <div className="mb-6 flex items-center gap-2 text-text">
+            <Edit3 className="h-5 w-5 text-accent" />
+            <h2 className="text-lg font-semibold tracking-tight">
+              Create card
             </h2>
           </div>
           <form onSubmit={addCard} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Front label (Question)
+              <label className="mb-1 block text-sm font-medium text-muted">
+                Front (question)
               </label>
               <textarea
                 value={newFront}
                 onChange={(e) => setNewFront(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm resize-none h-24"
-                placeholder="e.g. What is the process by which plants make food?"
+                className={`${fieldClass} h-24`}
+                placeholder="e.g. What is photosynthesis?"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Back label (Answer)
+              <label className="mb-1 block text-sm font-medium text-muted">
+                Back (answer)
               </label>
               <textarea
                 value={newBack}
                 onChange={(e) => setNewBack(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm resize-none h-24"
-                placeholder="e.g. Photosynthesis"
+                className={`${fieldClass} h-24`}
+                placeholder="e.g. How plants make food from light"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition"
+              className="w-full rounded-md bg-accent px-4 py-2.5 font-medium text-white transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              Add Flashcard
+              Add flashcard
             </button>
           </form>
         </div>
       </div>
 
       <div className="md:col-span-3">
-        <h2 className="font-semibold text-lg text-gray-900 tracking-tight mb-6">
-          Your Cards ({cards.length})
+        <h2 className="mb-6 text-lg font-semibold tracking-tight text-text">
+          Your cards ({cards.length})
         </h2>
         <div className="space-y-3">
           <AnimatePresence>
@@ -113,36 +115,37 @@ export default function ManageMode({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-start justify-between group"
+                className="group flex items-start justify-between rounded-lg border border-line bg-surface p-5"
               >
-                <div className="grid sm:grid-cols-2 gap-4 flex-1 mr-4">
+                <div className="mr-4 grid flex-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-faint">
                       Front
                     </span>
-                    <p className="text-gray-900 text-sm">{card.front}</p>
+                    <p className="text-sm text-text">{card.front}</p>
                   </div>
                   <div>
-                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider block mb-1">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-accent">
                       Back
                     </span>
-                    <p className="text-gray-600 text-sm">{card.back}</p>
+                    <p className="text-sm text-muted">{card.back}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => deleteCard(card.id)}
-                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-md transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="rounded-md p-2 text-muted opacity-0 transition hover:bg-danger-soft hover:text-danger focus:opacity-100 group-hover:opacity-100"
                   title="Delete card"
+                  aria-label="Delete card"
                 >
-                  <Trash className="w-4 h-4" />
+                  <Trash className="h-4 w-4" />
                 </button>
               </motion.div>
             ))}
           </AnimatePresence>
           {cards.length === 0 && (
-            <div className="text-center py-10 rounded-2xl border border-dashed border-gray-200">
-              <p className="text-gray-500 text-sm">
-                You haven't added any flashcards yet.
+            <div className="rounded-lg border border-dashed border-line-strong py-10 text-center">
+              <p className="text-sm text-muted">
+                You haven&apos;t added any flashcards yet.
               </p>
             </div>
           )}

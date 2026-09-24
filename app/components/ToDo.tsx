@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Trash2 } from "lucide-react";
-import { FormEvent } from "react";
+import React, { useState, useEffect, FormEvent } from "react";
+import { Trash2, Plus, ListTodo } from "lucide-react";
 
 interface Task {
   id: string;
@@ -15,31 +14,30 @@ export default function ToDo() {
   const [newTask, setNewTask] = useState("");
 
   useEffect(() => {
-    fetchTasks();
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/ToDo");
+        const data = await res.json();
+        if (!cancelled) setTasks(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Failed to fetch tasks:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const fetchTasks = async () => {
-    try {
-      const res = await fetch("/api/ToDo");
-      const data = await res.json();
-      setTasks(data);
-      console.log(tasks);
-    } catch (e) {
-      console.error("Failed to fetch cards: ", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addCard = async (e?: FormEvent) => {
+  const addTask = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     if (!newTask.trim()) return;
     try {
       const res = await fetch("/api/ToDo", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task: newTask }),
       });
       const data = await res.json();
@@ -50,56 +48,66 @@ export default function ToDo() {
     }
   };
 
-  const deleteCard = async (id: string) => {
+  const deleteTask = async (id: string) => {
     try {
       await fetch(`/api/ToDo/${id}`, { method: "DELETE" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {
-      console.error("Failed to delete card:", e);
+      console.error("Failed to delete task:", e);
     }
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      addCard();
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <div className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-xl max-w-sm w-full border border-slate-100">
-        <div className="text-2xl text-slate-800 tracking-tight my-4 font-mono">
-          {tasks.map(({ id, task }) => (
-            <div key={id} className="flex items-center gap-2">
-              <input type="checkbox" id={id} name="task" value={id} />
-              <label htmlFor={id}>{task}</label>
-              <button
-                onClick={() => deleteCard(id)}
-                className="p-3 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          <form onSubmit={addCard}>
-            <textarea
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyDown={handleKeyDown}
-              required
-            />
-          </form>
+    <div className="w-full max-w-lg">
+      <form onSubmit={addTask} className="mb-4 flex gap-2">
+        <input
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          placeholder="Add a task…"
+          aria-label="New task"
+          className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
+        />
+        <button
+          type="submit"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          <Plus className="h-4 w-4" /> Add
+        </button>
+      </form>
+
+      {loading ? (
+        <p className="py-10 text-center text-sm text-faint">Loading…</p>
+      ) : tasks.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-line-strong py-12 text-center">
+          <ListTodo className="mx-auto mb-2 h-8 w-8 text-faint" />
+          <p className="text-sm text-muted">No tasks yet. Add one above.</p>
         </div>
-      </div>
-    </>
+      ) : (
+        <ul className="space-y-1.5">
+          {tasks.map(({ id, task }) => (
+            <li
+              key={id}
+              className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2.5"
+            >
+              <input
+                type="checkbox"
+                id={id}
+                className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+              />
+              <label htmlFor={id} className="flex-1 text-sm text-text">
+                {task}
+              </label>
+              <button
+                onClick={() => deleteTask(id)}
+                aria-label="Delete task"
+                className="rounded-md p-1.5 text-muted transition-colors hover:bg-danger-soft hover:text-danger focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

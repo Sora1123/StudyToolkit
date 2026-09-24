@@ -4,19 +4,23 @@ import { NextResponse } from "next/server";
 
 const dataFilePath = path.join(process.cwd(), "public/Flashcard.json");
 
-// Simple helper to read DB
-async function readDb() {
+interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+}
+
+async function readDb(): Promise<Flashcard[]> {
   try {
-    const result = await fs.readFileSync(dataFilePath, "utf-8");
+    const result = fs.readFileSync(dataFilePath, "utf-8");
     return JSON.parse(result);
-  } catch (e) {
+  } catch {
     return [];
   }
 }
 
-// Simple helper to write DB
-async function writeDb(data: any) {
-  await fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
+async function writeDb(data: Flashcard[]) {
+  fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
 export async function DELETE(
@@ -24,10 +28,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  let cards = await readDb();
-
-  cards = cards.filter((card: any) => card.id !== id);
-  await writeDb(cards);
+  const cards = await readDb();
+  const next = cards.filter((card) => card.id !== id);
+  await writeDb(next);
   return NextResponse.json({ success: true });
 }
-

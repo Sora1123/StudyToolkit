@@ -6,16 +6,10 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  Brain,
+  Layers,
   Plus,
 } from "lucide-react";
 import { useFlashcard } from "@/context/FlashcardContext";
-
-interface Flashcard {
-  id: string;
-  front: string;
-  back: string;
-}
 
 interface FlashcardProps {
   onEmptyAction?: () => void;
@@ -33,20 +27,22 @@ export default function Flashcard({ onEmptyAction }: FlashcardProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    try {
-      const res = await fetch("/api/Flashcards");
-      const data = await res.json();
-      setCards(data);
-    } catch (e) {
-      console.error("Failed to fetch cards:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/Flashcards");
+        const data = await res.json();
+        if (!cancelled) setCards(data);
+      } catch (e) {
+        console.error("Failed to fetch cards:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setCards]);
 
   const nextCard = () => {
     if (currentIndex < cards.length - 1) {
@@ -65,25 +61,25 @@ export default function Flashcard({ onEmptyAction }: FlashcardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     );
   }
 
   if (cards.length === 0) {
     return (
-      <div className="text-center py-20 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm w-full">
-        <Brain className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No cards yet</h3>
-        <p className="text-gray-500 mb-6">
+      <div className="w-full rounded-lg border border-dashed border-line-strong px-6 py-20 text-center">
+        <Layers className="mx-auto mb-4 h-10 w-10 text-faint" />
+        <h3 className="mb-1 text-base font-medium text-text">No cards yet</h3>
+        <p className="mb-6 text-sm text-muted">
           There are no flashcards available to study right now.
         </p>
         {onEmptyAction && (
           <button
             onClick={onEmptyAction}
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition"
+            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            <Plus className="w-4 h-4" /> Add a Card
+            <Plus className="h-4 w-4" /> Add a card
           </button>
         )}
       </div>
@@ -93,62 +89,63 @@ export default function Flashcard({ onEmptyAction }: FlashcardProps) {
   const currentCard = cards[currentIndex] || cards[0];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="mb-6 flex items-center justify-between w-full text-sm font-medium text-gray-500">
+    <div className="flex w-full flex-col items-center">
+      <div className="mb-6 flex w-full items-center justify-between text-sm font-medium text-muted">
         <span>
           Card {currentIndex + 1} of {cards.length}
         </span>
         <button
           onClick={() => setIsFlipped(!isFlipped)}
-          className="flex items-center gap-1.5 hover:text-indigo-600 transition"
+          className="flex items-center gap-1.5 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <RotateCcw className="w-4 h-4" /> Flip
+          <RotateCcw className="h-4 w-4" /> Flip
         </button>
       </div>
 
       <div
-        className="w-full aspect-4/3 [perspective:1000px] cursor-pointer"
+        className="w-full cursor-pointer [perspective:1000px]"
+        style={{ aspectRatio: "4 / 3" }}
         onClick={() => setIsFlipped(!isFlipped)}
       >
         <motion.div
-          className="w-full h-full relative [transform-style:preserve-3d]"
+          className="relative h-full w-full [transform-style:preserve-3d]"
           animate={{ rotateX: isFlipped ? 180 : 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
           {/* Front */}
-          <div className="absolute w-full h-full [backface-visibility:hidden] bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex items-center justify-center text-center">
-            <p className="text-2xl font-medium text-gray-800 leading-relaxed">
+          <div className="absolute flex h-full w-full items-center justify-center rounded-xl border border-line bg-surface p-8 text-center [backface-visibility:hidden]">
+            <p className="text-2xl font-medium leading-relaxed text-text">
               {currentCard.front}
             </p>
           </div>
-
           {/* Back */}
           <div
-            className="absolute w-full h-full [backface-visibility:hidden] bg-indigo-600 p-8 rounded-3xl shadow-[0_8px_30px_rgb(99,102,241,0.2)] flex items-center justify-center text-center"
+            className="absolute flex h-full w-full items-center justify-center rounded-xl bg-accent p-8 text-center [backface-visibility:hidden]"
             style={{ transform: "rotateX(180deg)" }}
           >
-            <p className="text-2xl font-medium text-white leading-relaxed">
+            <p className="text-2xl font-medium leading-relaxed text-white">
               {currentCard.back}
             </p>
           </div>
         </motion.div>
       </div>
 
-      <div className="flex items-center gap-4 mt-8">
+      <div className="mt-8 flex items-center gap-4">
         <button
           onClick={prevCard}
           disabled={currentIndex === 0}
-          className="p-3 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Previous card"
+          className="rounded-full p-3 text-muted transition hover:bg-surface-2 hover:text-text disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft className="h-6 w-6" />
         </button>
 
         <div className="flex gap-2">
           {cards.map((_, idx) => (
             <div
               key={idx}
-              className={`w-2 h-2 rounded-full transition-all ${
-                idx === currentIndex ? "bg-indigo-600 w-4" : "bg-gray-200"
+              className={`h-2 rounded-full transition-all ${
+                idx === currentIndex ? "w-4 bg-accent" : "w-2 bg-line-strong"
               }`}
             />
           ))}
@@ -157,9 +154,10 @@ export default function Flashcard({ onEmptyAction }: FlashcardProps) {
         <button
           onClick={nextCard}
           disabled={currentIndex === cards.length - 1}
-          className="p-3 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Next card"
+          className="rounded-full p-3 text-muted transition hover:bg-surface-2 hover:text-text disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <ChevronRight className="w-6 h-6" />
+          <ChevronRight className="h-6 w-6" />
         </button>
       </div>
     </div>

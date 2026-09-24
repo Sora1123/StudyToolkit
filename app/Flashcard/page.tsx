@@ -3,13 +3,12 @@
 import { useState } from "react";
 import Flashcard from "@/app/components/Flashcard/Flashcard";
 import { useFlashcard } from "@/context/FlashcardContext";
-import Link from "next/link";
 import ManageMode from "@/app/components/Flashcard/ManageMode";
+import PageHeader from "@/app/components/ui/PageHeader";
 
-export default function Home() {
+export default function Page() {
   const [mode, setMode] = useState<"study" | "manage">("study");
   const {
-    isFlipped,
     setIsFlipped,
     cards,
     setCards,
@@ -17,55 +16,55 @@ export default function Home() {
     setCurrentIndex,
   } = useFlashcard();
 
-  return (
-    <>
-      <div className="min-h-screen text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-        <header className="sticky top-0 z-10 w-full">
-          <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex bg-gray-100 p-1 rounded-lg">
-              <button
-                onClick={() => {
-                  setMode("study");
-                  setIsFlipped(false);
-                }}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  mode === "study"
-                    ? "bg-white shadow-sm text-indigo-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Study
-              </button>
-              <button
-                onClick={() => setMode("manage")}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  mode === "manage"
-                    ? "bg-white shadow-sm text-indigo-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Manage
-              </button>
-            </div>
-          </div>
-        </header>
+  const tabs = (
+    <div className="flex rounded-md bg-surface-2 p-0.5">
+      <button
+        onClick={() => {
+          setMode("study");
+          setIsFlipped(false);
+        }}
+        className={`rounded px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${
+          mode === "study"
+            ? "bg-surface text-accent shadow-sm"
+            : "text-muted hover:text-text"
+        }`}
+      >
+        Study
+      </button>
+      <button
+        onClick={() => setMode("manage")}
+        className={`rounded px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${
+          mode === "manage"
+            ? "bg-surface text-accent shadow-sm"
+            : "text-muted hover:text-text"
+        }`}
+      >
+        Manage
+      </button>
+    </div>
+  );
 
-        <main className="max-w-4xl mx-auto px-4 py-12 flex justify-center">
-          {mode === "study" ? (
-            <div className="w-full max-w-xl flex flex-col items-center">
-              <Flashcard onEmptyAction={() => setMode("manage")} />
-            </div>
-          ) : (
-            <ManageMode
-              cards={cards}
-              setCards={setCards}
-              currentIndex={currentIndex}
-              setCurrentIndex={setCurrentIndex}
-            />
-          )}
-        </main>
-      </div>
-      <Link href="/">To home</Link>
-    </>
+  return (
+    <div className="flex min-h-full flex-col">
+      <PageHeader
+        title="Flashcards"
+        description="Create and study flashcards."
+        actions={tabs}
+      />
+      <main className="mx-auto flex w-full max-w-4xl flex-1 justify-center px-4 py-8">
+        {mode === "study" ? (
+          <div className="flex w-full max-w-xl flex-col items-center">
+            <Flashcard onEmptyAction={() => setMode("manage")} />
+          </div>
+        ) : (
+          <ManageMode
+            cards={cards}
+            setCards={setCards}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+          />
+        )}
+      </main>
+    </div>
   );
 }

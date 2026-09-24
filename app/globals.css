@@ -1,32 +1,115 @@
 @import "tailwindcss";
 @source "../node_modules/@latex-math/react";
 
-/* :root {
-  --background: #ffffff;
-  --foreground: #171717;
-} */
+/*
+  StudyToolkit design system — "a customizable digital study desk".
+  Restrained, academic/productivity aesthetic inspired by Notion & Linear.
+  Semantic tokens are exposed as CSS variables and mapped into the Tailwind
+  theme so components use names like `bg-surface`, `text-muted`, `border-line`.
+*/
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Neutrals — warm paper-like desk surface */
+  --bg: #fbfbfa; /* app background (the "desk") */
+  --surface: #ffffff; /* module/card surface */
+  --surface-2: #f4f4f2; /* subtle inset panels */
+  --line: #e8e8e4; /* borders / dividers */
+  --line-strong: #dcdcd6;
+
+  /* Text */
+  --text: #2f2e2b; /* primary */
+  --text-muted: #6b6a65; /* secondary */
+  --text-faint: #9a9992; /* metadata */
+
+  /* Brand accent — a single restrained indigo */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef0fe;
+
+  /* Functional states */
+  --success: #15803d;
+  --success-soft: #eaf6ee;
+  --warning: #b45309;
+  --warning-soft: #fbf1e3;
+  --danger: #b91c1c;
+  --danger-soft: #fbeaea;
+
+  /* Subject palette — muted, used sparingly for tags/accents */
+  --subject-math: #6d28d9;
+  --subject-science: #0e7490;
+  --subject-cs: #1d4ed8;
+  --subject-humanities: #b45309;
+  --subject-business: #047857;
+  --subject-default: #6b6a65;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-subject-math: var(--subject-math);
+  --color-subject-science: var(--subject-science);
+  --color-subject-cs: var(--subject-cs);
+  --color-subject-humanities: var(--subject-humanities);
+  --color-subject-business: var(--subject-business);
+  --color-subject-default: var(--subject-default);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A faint dotted "corkboard" texture for the workspace canvas. */
+.desk-canvas {
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

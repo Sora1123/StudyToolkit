@@ -4,19 +4,22 @@ import { NextResponse } from "next/server";
 
 const dataFilePath = path.join(process.cwd(), "public/ToDo.json");
 
-// Simple helper to read DB
-async function readDb() {
+interface Task {
+  id: string;
+  task: string;
+}
+
+async function readDb(): Promise<Task[]> {
   try {
-    const result = await fs.readFileSync(dataFilePath, "utf-8");
+    const result = fs.readFileSync(dataFilePath, "utf-8");
     return JSON.parse(result);
-  } catch (e) {
+  } catch {
     return [];
   }
 }
 
-// Simple helper to write DB
-async function writeDb(data: any) {
-  await fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
+async function writeDb(data: Task[]) {
+  fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
 export async function DELETE(
@@ -24,9 +27,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  let tasks = await readDb();
-
-  tasks = tasks.filter((task: any) => task.id !== id);
-  await writeDb(tasks);
+  const tasks = await readDb();
+  const next = tasks.filter((task) => task.id !== id);
+  await writeDb(next);
   return NextResponse.json({ success: true });
 }
