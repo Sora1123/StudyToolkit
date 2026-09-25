@@ -1,83 +1,21 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Search, Bell, Plus, RotateCcw, X } from "lucide-react";
-import { useWorkspace } from "./components/workspace/useWorkspace";
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { useWorkspaceContext } from "./components/workspace/WorkspaceProvider";
+import { useSettings } from "./components/settings/SettingsProvider";
 import WorkspaceCanvas from "./components/workspace/WorkspaceCanvas";
 import AddModuleModal from "./components/workspace/AddModuleModal";
 import { MODULES } from "./components/workspace/modules.registry";
 
-
 export default function Home() {
-  const {
-    modules,
-    hydrated,
-    addModule,
-    removeModule,
-    updateLayout,
-    resetWorkspace,
-  } = useWorkspace();
+  const { modules, hydrated, addModule, removeModule, updateLayout } =
+    useWorkspaceContext();
+  const { settings } = useSettings();
   const [addOpen, setAddOpen] = useState(false);
 
-  const [greeting, setGreeting] = useState("");
-  useEffect(() => {
-    const hour = new Date().getHours();
-
-    if (hour < 12) {
-      setGreeting("Good morning. What are you working on?");
-    } else if (hour < 18) {
-      setGreeting("Good afternoon. What are you working on?");
-    } else {
-      setGreeting("Good evening. What are you working on?");
-    }
-  }, []);
-
-  // Greeting is computed once per mount (client only) to avoid SSR mismatch.
-  const subtitle = useMemo(() => `${greeting}. What are you working on?`, []);
-
   return (
-    <div className="flex min-h-full flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="mr-auto min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight text-text sm:text-xl">
-              My Study Space
-            </h1>
-            <p className="truncate text-xs text-muted sm:text-sm">{subtitle}</p>
-          </div>
-
-          {/* Search (visual + accessible; wired to filter later) */}
-          <div className="relative hidden items-center sm:flex">
-            <Search className="pointer-events-none absolute left-2.5 h-4 w-4 text-faint" />
-            <input
-              type="search"
-              placeholder="Search"
-              aria-label="Search your study space"
-              className="w-44 rounded-md border border-line bg-surface py-1.5 pl-8 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent lg:w-56"
-            />
-          </div>
-
-          <button
-            aria-label="Notifications"
-            title="Notifications"
-            className="relative rounded-md border border-line bg-surface p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent" />
-          </button>
-
-          <button
-            onClick={() => setAddOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add module</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Body */}
+    <div className="relative flex h-full min-h-full flex-col">
       <div className="flex flex-1 flex-col p-4 sm:p-6">
         {!hydrated ? (
           <div className="flex flex-1 items-center justify-center">
@@ -87,18 +25,10 @@ export default function Home() {
           <>
             {/* Desktop / tablet: draggable bulletin-board canvas */}
             <div className="hidden flex-1 md:flex md:flex-col">
-              {modules.length > 0 && (
-                <div className="mb-2 flex justify-end">
-                  <button
-                    onClick={resetWorkspace}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-faint transition-colors hover:text-muted focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Reset layout
-                  </button>
-                </div>
-              )}
               <WorkspaceCanvas
                 modules={modules}
+                size={settings.dashboardSize}
+                snapping={settings.snapping}
                 onLayoutChange={updateLayout}
                 onRemove={removeModule}
                 onAddFirst={() => setAddOpen(true)}
@@ -163,6 +93,16 @@ export default function Home() {
           </>
         )}
       </div>
+
+      {/* Floating "Add module" button — bottom-right circular FAB */}
+      <button
+        onClick={() => setAddOpen(true)}
+        aria-label="Add module"
+        title="Add module"
+        className="fixed bottom-20 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-8 md:right-8"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       <AddModuleModal
         open={addOpen}

@@ -116,6 +116,10 @@ export function useWorkspace() {
     setModules(defaultModules());
   }, []);
 
+  const replaceAll = useCallback((next: WorkspaceModule[]) => {
+    setModules(next);
+  }, []);
+
   return {
     modules,
     hydrated,
@@ -123,5 +127,6 @@ export function useWorkspace() {
     removeModule,
     updateLayout,
     resetWorkspace,
+    replaceAll,
   };
 }

@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
 import { GripVertical, MoreVertical, X } from "lucide-react";
 import { ModuleDefinition } from "./modules.registry";
+import {
+  Guides,
+  Rect,
+  resolveOverlap,
+  snapDrag,
+  snapResize,
+} from "./snapping";
 
 export interface ModuleLayout {
   x: number;
@@ -15,21 +22,134 @@ export interface ModuleLayout {
 interface ModuleProps {
   def: ModuleDefinition;
   layout: ModuleLayout;
+  /** Rects of all *other* modules, for alignment + overlap snapping. */
+  others: Rect[];
+  /** When false, drag/resize are free (no snap, guides, or overlap resolve). */
+  snapping: boolean;
+  /** Current board zoom, so pointer deltas and react-rnd resize are corrected. */
+  scale: number;
   onLayoutChange: (layout: ModuleLayout) => void;
   onRemove: () => void;
+  onGuides: (guides: Guides) => void;
 }
+
+const emptyGuides: Guides = { vertical: [], horizontal: [] };
 
 export default function Module({
   def,
   layout,
+  others,
+  snapping,
+  scale,
   onLayoutChange,
   onRemove,
+  onGuides,
 }: ModuleProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const Content = def.component;
   const Icon = def.icon;
 
+  // --- Custom magnetic drag ------------------------------------------------
+  // We own the position during a drag and set it directly from pointer math,
+  // running it through snapDrag. Because nothing else fights this value, the
+  // module sits pinned on the snap line within the detent zone (smooth magnet).
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  // Holds the active window listeners so we can detach without self-reference.
+  const listenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: () => void;
+  } | null>(null);
+
+  const pos = dragPos ?? { x: layout.x, y: layout.y };
+
+  const onHeaderPointerDown = (e: React.PointerEvent) => {
+    // Don't start a drag from the options menu button.
+    if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: layout.x,
+      originY: layout.y,
+    };
+    setDragPos({ x: layout.x, y: layout.y });
+
+    const move = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      // Divide by zoom because the board is CSS-scaled.
+      const rawX = d.originX + (ev.clientX - d.startX) / scale;
+      const rawY = d.originY + (ev.clientY - d.startY) / scale;
+
+      if (!snapping) {
+        setDragPos({ x: rawX, y: rawY });
+        return;
+      }
+      const moving: Rect = {
+        x: rawX,
+        y: rawY,
+        width: layout.width,
+        height: layout.height,
+      };
+      const { x, y, guides } = snapDrag(moving, others);
+      onGuides(guides);
+      setDragPos({ x, y });
+    };
+
+    const up = () => {
+      if (listenersRef.current) {
+        window.removeEventListener("pointermove", listenersRef.current.move);
+        window.removeEventListener("pointerup", listenersRef.current.up);
+        listenersRef.current = null;
+      }
+      onGuides(emptyGuides);
+      const d = dragRef.current;
+      dragRef.current = null;
+      setDragPos((current) => {
+        if (d && current) {
+          const moving: Rect = {
+            x: current.x,
+            y: current.y,
+            width: layout.width,
+            height: layout.height,
+          };
+          const finalRect = snapping ? resolveOverlap(moving, others) : moving;
+          onLayoutChange({
+            ...layout,
+            x: Math.max(0, finalRect.x),
+            y: Math.max(0, finalRect.y),
+          });
+        }
+        return null;
+      });
+    };
+
+    listenersRef.current = { move, up };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  // Detach any active drag listeners on unmount.
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current) {
+        window.removeEventListener("pointermove", listenersRef.current.move);
+        window.removeEventListener("pointerup", listenersRef.current.up);
+        listenersRef.current = null;
+      }
+    };
+  }, []);
+
+  // Close the options menu on outside click.
   useEffect(() => {
     if (!menuOpen) return;
     const onDoc = (e: MouseEvent) => {
@@ -44,22 +164,47 @@ export default function Module({
   return (
     <Rnd
       size={{ width: layout.width, height: layout.height }}
-      position={{ x: layout.x, y: layout.y }}
-      onDragStop={(_e, d) =>
-        onLayoutChange({ ...layout, x: d.x, y: d.y })
-      }
-      onResizeStop={(_e, _dir, ref, _delta, position) =>
+      position={pos}
+      // Dragging is handled by our custom magnetic pointer logic below.
+      disableDragging
+      onResize={(_e, _dir, ref, _delta, position) => {
+        if (!snapping) return;
+        const { guides } = snapResize(
+          position,
+          ref.offsetWidth,
+          ref.offsetHeight,
+          others,
+        );
+        onGuides(guides);
+      }}
+      onResizeStop={(_e, _dir, ref, _delta, position) => {
+        if (!snapping) {
+          onLayoutChange({
+            x: position.x,
+            y: position.y,
+            width: ref.offsetWidth,
+            height: ref.offsetHeight,
+          });
+          return;
+        }
+        const { width, height } = snapResize(
+          position,
+          ref.offsetWidth,
+          ref.offsetHeight,
+          others,
+        );
+        onGuides(emptyGuides);
         onLayoutChange({
           x: position.x,
           y: position.y,
-          width: ref.offsetWidth,
-          height: ref.offsetHeight,
-        })
-      }
+          width,
+          height,
+        });
+      }}
       minWidth={def.minWidth ?? 220}
       minHeight={def.minHeight ?? 180}
       bounds="parent"
-      dragHandleClassName="module-drag-handle"
+      scale={scale}
       className="group/module"
       resizeHandleClasses={{
         bottomRight:
@@ -73,19 +218,25 @@ export default function Module({
         ),
       }}
     >
-      <div className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+      <div
+        className={`flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
+          dragPos ? "shadow-[0_8px_24px_rgba(0,0,0,0.10)]" : ""
+        }`}
+      >
         {/* Header — drag handle + hover-revealed controls */}
-        <div className="module-drag-handle flex cursor-grab items-center gap-2 border-b border-line px-3 py-2 active:cursor-grabbing">
+        <div
+          onPointerDown={onHeaderPointerDown}
+          className={`flex touch-none select-none items-center gap-2 border-b border-line px-3 py-2 ${
+            dragPos ? "cursor-grabbing" : "cursor-grab"
+          }`}
+        >
           <GripVertical className="h-3.5 w-3.5 shrink-0 text-faint opacity-0 transition-opacity group-hover/module:opacity-100" />
           <Icon className="h-4 w-4 shrink-0 text-muted" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
             {def.title}
           </span>
 
-          <div
-            ref={menuRef}
-            className="relative opacity-0 transition-opacity group-hover/module:opacity-100"
-          >
+          <div ref={menuRef} data-no-drag className="relative opacity-0 transition-opacity group-hover/module:opacity-100">
             <button
               aria-label="Module options"
               aria-haspopup="menu"

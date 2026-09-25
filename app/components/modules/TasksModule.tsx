@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Circle, Plus } from "lucide-react";
 import { PriorityBadge, SubjectTag } from "@/app/components/ui/Tags";
 import { Priority, Subject, subjectFromString } from "@/app/components/ui/subjects";
@@ -36,6 +36,7 @@ export default function TasksModule() {
   const [tasks, setTasks] = useState<UiTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +90,7 @@ export default function TasksModule() {
         },
       ]);
       setNewTask("");
+      inputRef.current?.focus();
     } catch (e) {
       console.error("Failed to add task:", e);
     }
@@ -97,6 +99,10 @@ export default function TasksModule() {
   const done = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
+  // Active tasks first, completed sink to the bottom.
+  const ordered = [...tasks].sort(
+    (a, b) => Number(a.completed) - Number(b.completed),
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -123,7 +129,7 @@ export default function TasksModule() {
             No tasks yet. Add one below.
           </p>
         ) : (
-          tasks.map((t) => (
+          ordered.map((t) => (
             <div
               key={t.id}
               className="group/task flex items-start gap-2.5 rounded-md px-1.5 py-1.5 hover:bg-surface-2"
@@ -169,6 +175,7 @@ export default function TasksModule() {
         className="mt-2 flex items-center gap-2 border-t border-line pt-2"
       >
         <input
+          ref={inputRef}
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a task…"

@@ -1,46 +1,47 @@
 @import "tailwindcss";
 @source "../node_modules/@latex-math/react";
 
-/*
-  StudyToolkit design system — "a customizable digital study desk".
-  Restrained, academic/productivity aesthetic inspired by Notion & Linear.
-  Semantic tokens are exposed as CSS variables and mapped into the Tailwind
-  theme so components use names like `bg-surface`, `text-muted`, `border-line`.
-*/
-
 :root {
-  /* Neutrals — warm paper-like desk surface */
-  --bg: #fbfbfa; /* app background (the "desk") */
-  --surface: #ffffff; /* module/card surface */
-  --surface-2: #f4f4f2; /* subtle inset panels */
-  --line: #e8e8e4; /* borders / dividers */
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --line: #e8e8e4;
   --line-strong: #dcdcd6;
-
-  /* Text */
-  --text: #2f2e2b; /* primary */
-  --text-muted: #6b6a65; /* secondary */
-  --text-faint: #9a9992; /* metadata */
-
-  /* Brand accent — a single restrained indigo */
+  --text: #2f2e2b;
+  --text-muted: #6b6a65;
+  --text-faint: #9a9992;
   --accent: #4f46e5;
   --accent-hover: #4338ca;
   --accent-soft: #eef0fe;
-
-  /* Functional states */
   --success: #15803d;
   --success-soft: #eaf6ee;
   --warning: #b45309;
   --warning-soft: #fbf1e3;
   --danger: #b91c1c;
   --danger-soft: #fbeaea;
-
-  /* Subject palette — muted, used sparingly for tags/accents */
   --subject-math: #6d28d9;
   --subject-science: #0e7490;
   --subject-cs: #1d4ed8;
   --subject-humanities: #b45309;
   --subject-business: #047857;
   --subject-default: #6b6a65;
+  --font-scale: 1;
+  --font-app: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark {
+  --bg: #191918;
+  --surface: #232322;
+  --surface-2: #2b2b2a;
+  --line: #34342f;
+  --line-strong: #43433d;
+  --text: #ecebe6;
+  --text-muted: #a8a79f;
+  --text-faint: #77776f;
+  --accent-soft: #2a2a53;
+  --success-soft: #16281c;
+  --warning-soft: #302512;
+  --danger-soft: #331c1c;
 }
 
 @theme inline {
@@ -49,30 +50,25 @@
   --color-surface-2: var(--surface-2);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-
   --color-text: var(--text);
   --color-muted: var(--text-muted);
   --color-faint: var(--text-faint);
-
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
-
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
-
   --color-subject-math: var(--subject-math);
   --color-subject-science: var(--subject-science);
   --color-subject-cs: var(--subject-cs);
   --color-subject-humanities: var(--subject-humanities);
   --color-subject-business: var(--subject-business);
   --color-subject-default: var(--subject-default);
-
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-app);
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
@@ -85,10 +81,14 @@ body {
   height: 100%;
 }
 
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-sans);
+  font-family: var(--font-app);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -98,10 +98,23 @@ body {
   outline-offset: 2px;
 }
 
-/* A faint dotted "corkboard" texture for the workspace canvas. */
 .desk-canvas {
   background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
   background-size: 22px 22px;
+}
+
+.no-desk-texture .desk-canvas {
+  background-image: none;
+}
+
+/* Hide scrollbars while keeping scroll/pan (used by the zoomed board). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
