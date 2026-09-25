@@ -15,7 +15,9 @@ export interface Rect {
   height: number;
 }
 
-export const GRID = 8;
+// Matches the `.desk-canvas` background dot spacing (background-size: 22px).
+// Positions and sizes lock to these dots so modules always land on the grid.
+export const GRID = 22;
 export const SNAP = 6; // px magnetic detent zone around alignment/square snapping
 
 /** Vertical guide = a fixed x; Horizontal guide = a fixed y. */
@@ -25,7 +27,7 @@ export interface Guides {
 }
 
 export const snapToGrid = (value: number, grid = GRID) =>
-  Math.round(value / grid) * grid;
+  Math.round(value / grid) * grid + 11;
 
 /** The candidate alignment coordinates a rect exposes on each axis (edges only). */
 function xTargets(r: Rect): number[] {
@@ -43,8 +45,10 @@ export function snapDrag(
   moving: Rect,
   others: Rect[],
 ): { x: number; y: number; guides: Guides } {
-  let x = moving.x;
-  let y = moving.y;
+  // Base "locking" feel: snap the top-left corner to the nearest dot so a
+  // module always lands on the background grid, exactly like resize does.
+  let x = snapToGrid(moving.x);
+  let y = snapToGrid(moving.y);
   const guides: Guides = { vertical: [], horizontal: [] };
 
   // The moving rect's own candidate lines: left/right and top/bottom edges only.
@@ -85,6 +89,8 @@ export function snapDrag(
     }
   }
 
+  // Neighbour-edge alignment (above) overrides the grid on whichever axis it
+  // engages, so aligning to another module still feels magnetic.
   if (hasX) guides.vertical.push(bestXLine);
   if (hasY) guides.horizontal.push(bestYLine);
 

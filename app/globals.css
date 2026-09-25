@@ -107,14 +107,24 @@ body {
   background-image: none;
 }
 
-/* Hide scrollbars while keeping scroll/pan (used by the zoomed board). */
-.no-scrollbar {
+/* Hide scrollbars everywhere while keeping scroll/pan — no visible bar. */
+* {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .no-scrollbar::-webkit-scrollbar {
   width: 0;
   height: 0;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

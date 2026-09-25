@@ -19,12 +19,20 @@ import {
   FONT_SIZES,
   FontFamily,
   FontSize,
+  NotesUnit,
   Theme,
+  ZOOM_MAX,
+  ZOOM_MIN,
   useSettings,
 } from "./SettingsProvider";
 import { useWorkspaceContext } from "@/app/components/workspace/WorkspaceProvider";
 import { MODULES, ModuleType } from "@/app/components/workspace/modules.registry";
 import { WorkspaceModule } from "@/app/components/workspace/useWorkspace";
+import {
+  LANGUAGES,
+  Language,
+  useT,
+} from "@/app/components/i18n/I18nProvider";
 
 interface SettingsModalProps {
   open: boolean;
@@ -72,17 +80,18 @@ function Toggle({
 }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-5 w-9 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
         checked ? "bg-accent" : "bg-line-strong"
       }`}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-          checked ? "translate-x-4" : "translate-x-0.5"
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+          checked ? "translate-x-[18px]" : "translate-x-0.5"
         }`}
       />
     </button>
@@ -124,6 +133,7 @@ function isModuleType(t: string): t is ModuleType {
 
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { settings, update, reset } = useSettings();
+  const t = useT();
   const workspace = useWorkspaceContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -258,7 +268,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       className="fixed inset-0 z-[70] flex items-start justify-center p-4 pt-[8vh]"
       role="dialog"
       aria-modal="true"
-      aria-label="Settings"
+      aria-label={t("settings.title")}
     >
       <div
         className="absolute inset-0 bg-black/30"
@@ -267,22 +277,22 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       />
       <div className="relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <h2 className="text-sm font-semibold text-text">Settings</h2>
+          <h2 className="text-sm font-semibold text-text">{t("settings.title")}</h2>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("settings.close")}
             className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-6 overflow-y-auto p-5">
+        <div className="no-scrollbar space-y-6 overflow-y-auto p-5">
           {/* Appearance */}
           <section>
-            <SectionTitle>Appearance</SectionTitle>
+            <SectionTitle>{t("settings.section.appearance")}</SectionTitle>
             <div className="divide-y divide-line">
-              <Field label="Theme">
+              <Field label={t("settings.theme")}>
                 <div className="flex rounded-md bg-surface-2 p-0.5">
                   {THEMES.map(({ value, label, icon: Icon }) => (
                     <button
@@ -297,13 +307,17 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {label}
+                      {value === "system"
+                        ? t("settings.theme.system")
+                        : value === "light"
+                          ? t("settings.theme.light")
+                          : t("settings.theme.dark")}
                     </button>
                   ))}
                 </div>
               </Field>
 
-              <Field label="Accent color">
+              <Field label={t("settings.accent")}>
                 <div className="flex items-center gap-1.5">
                   {(Object.keys(ACCENTS) as Accent[]).map((a) => (
                     <button
@@ -320,7 +334,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 </div>
               </Field>
 
-              <Field label="Font">
+              <Field label={t("settings.font")}>
                 <Segmented<FontFamily>
                   value={settings.fontFamily}
                   onChange={(v) => update({ fontFamily: v })}
@@ -330,7 +344,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 />
               </Field>
 
-              <Field label="Base font size">
+              <Field label={t("settings.fontSize")}>
                 <Segmented<FontSize>
                   value={settings.fontSize}
                   onChange={(v) => update({ fontSize: v })}
@@ -341,11 +355,22 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 />
               </Field>
 
-              <Field label="Desk texture">
+              <Field label={t("settings.deskTexture")}>
                 <Toggle
-                  label="Desk texture"
+                  label={t("settings.deskTexture")}
                   checked={settings.deskTexture}
                   onChange={(v) => update({ deskTexture: v })}
+                />
+              </Field>
+
+              <Field label={t("settings.language")}>
+                <Segmented<Language>
+                  value={settings.language}
+                  onChange={(v) => update({ language: v })}
+                  options={(Object.keys(LANGUAGES) as Language[]).map((l) => ({
+                    value: l,
+                    label: LANGUAGES[l].nativeLabel,
+                  }))}
                 />
               </Field>
             </div>
@@ -353,21 +378,21 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
           {/* Workspace */}
           <section>
-            <SectionTitle>Workspace</SectionTitle>
+            <SectionTitle>{t("settings.section.workspace")}</SectionTitle>
             <div className="divide-y divide-line">
-              <Field label="Dashboard size">
+              <Field label={t("settings.dashboardSize")}>
                 <select
                   value={sizeValue}
                   onChange={(e) => onSizeSelect(e.target.value)}
                   className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
                 >
-                  <option value="fit">Fit to window</option>
+                  <option value="fit">{t("settings.dashboardSize.fit")}</option>
                   {DASHBOARD_PRESETS.map((p) => (
                     <option key={p.label} value={`${p.width}x${p.height}`}>
                       {p.label}
                     </option>
                   ))}
-                  <option value="custom">Custom</option>
+                  <option value="custom">{t("settings.dashboardSize.custom")}</option>
                 </select>
               </Field>
 
@@ -398,16 +423,40 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </div>
                 )}
 
-              <Field label="Snapping guides">
+              <Field label={t("settings.snapping")}>
                 <Toggle
-                  label="Snapping guides"
+                  label={t("settings.snapping")}
                   checked={settings.snapping}
                   onChange={(v) => update({ snapping: v })}
                 />
               </Field>
 
+              <Field label={t("settings.defaultZoom")}>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min={Math.round(ZOOM_MIN * 100)}
+                    max={Math.round(ZOOM_MAX * 100)}
+                    step={10}
+                    value={Math.round(settings.defaultZoom * 100)}
+                    onChange={(e) => {
+                      const pct = Number(e.target.value);
+                      if (!Number.isFinite(pct)) return;
+                      const frac = Math.min(
+                        ZOOM_MAX,
+                        Math.max(ZOOM_MIN, pct / 100),
+                      );
+                      update({ defaultZoom: frac });
+                    }}
+                    aria-label={t("settings.defaultZoom")}
+                    className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                  />
+                  <span className="text-xs text-faint">%</span>
+                </div>
+              </Field>
+
               <div className="flex items-center justify-between gap-4 py-2">
-                <span className="text-sm text-text">Reset workspace</span>
+                <span className="text-sm text-text">{t("settings.resetWorkspace")}</span>
                 {confirmReset ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -417,13 +466,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       }}
                       className="rounded-md bg-danger px-2.5 py-1 text-xs font-medium text-white hover:opacity-90"
                     >
-                      Confirm
+                      {t("settings.confirm")}
                     </button>
                     <button
                       onClick={() => setConfirmReset(false)}
                       className="rounded-md px-2 py-1 text-xs text-muted hover:text-text"
                     >
-                      Cancel
+                      {t("settings.cancel")}
                     </button>
                   </div>
                 ) : (
@@ -431,7 +480,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                     onClick={() => setConfirmReset(true)}
                     className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-text"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" /> Reset
+                    <RotateCcw className="h-3.5 w-3.5" /> {t("settings.reset")}
                   </button>
                 )}
               </div>
@@ -440,19 +489,19 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
           {/* Data */}
           <section>
-            <SectionTitle>Data</SectionTitle>
+            <SectionTitle>{t("settings.section.data")}</SectionTitle>
             <div className="flex flex-wrap items-center gap-2 py-1">
               <button
                 onClick={exportLayout}
                 className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-2"
               >
-                <Download className="h-4 w-4" /> Export layout
+                <Download className="h-4 w-4" /> {t("settings.exportLayout")}
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-2"
               >
-                <Upload className="h-4 w-4" /> Import layout
+                <Upload className="h-4 w-4" /> {t("settings.importLayout")}
               </button>
               <input
                 ref={fileInputRef}
@@ -471,18 +520,118 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
             )}
           </section>
 
+          {/* Timer & Notes */}
+          <section>
+            <SectionTitle>{t("settings.section.timerNotes")}</SectionTitle>
+            <div className="divide-y divide-line">
+              <Field label={t("settings.focusMin")}>
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={settings.pomodoro.focus}
+                  onChange={(e) =>
+                    update({
+                      pomodoro: {
+                        ...settings.pomodoro,
+                        focus: Math.max(1, Number(e.target.value) || 1),
+                      },
+                    })
+                  }
+                  aria-label="Focus minutes"
+                  className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label={t("settings.breakMin")}>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={settings.pomodoro.break}
+                  onChange={(e) =>
+                    update({
+                      pomodoro: {
+                        ...settings.pomodoro,
+                        break: Math.max(1, Number(e.target.value) || 1),
+                      },
+                    })
+                  }
+                  aria-label="Break minutes"
+                  className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label={t("settings.longBreakMin")}>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={settings.pomodoro.longBreak}
+                  onChange={(e) =>
+                    update({
+                      pomodoro: {
+                        ...settings.pomodoro,
+                        longBreak: Math.max(1, Number(e.target.value) || 1),
+                      },
+                    })
+                  }
+                  aria-label="Long break minutes"
+                  className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label={t("settings.rounds")}>
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={settings.pomodoro.rounds}
+                  onChange={(e) =>
+                    update({
+                      pomodoro: {
+                        ...settings.pomodoro,
+                        rounds: Math.max(1, Number(e.target.value) || 1),
+                      },
+                    })
+                  }
+                  aria-label={t("settings.rounds")}
+                  className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label={t("settings.notesCount")}>
+                <Segmented<NotesUnit>
+                  value={settings.notesUnit}
+                  onChange={(v) => update({ notesUnit: v })}
+                  options={[
+                    { value: "words", label: t("settings.notes.words") },
+                    { value: "chars", label: t("settings.notes.chars") },
+                  ]}
+                />
+              </Field>
+            </div>
+          </section>
+
           {/* Profile */}
           <section>
-            <SectionTitle>Profile</SectionTitle>
-            <Field label="Display name">
-              <input
-                type="text"
-                value={settings.displayName}
-                onChange={(e) => update({ displayName: e.target.value })}
-                aria-label="Display name"
-                className="w-40 rounded-md border border-line bg-surface px-2.5 py-1 text-sm text-text outline-none focus:border-accent"
-              />
-            </Field>
+            <SectionTitle>{t("settings.section.profile")}</SectionTitle>
+            <div className="divide-y divide-line">
+              <Field label={t("settings.spaceTitle")}>
+                <input
+                  type="text"
+                  value={settings.spaceTitle}
+                  onChange={(e) => update({ spaceTitle: e.target.value })}
+                  aria-label={t("settings.spaceTitle")}
+                  className="w-40 rounded-md border border-line bg-surface px-2.5 py-1 text-sm text-text outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label={t("settings.displayName")}>
+                <input
+                  type="text"
+                  value={settings.displayName}
+                  onChange={(e) => update({ displayName: e.target.value })}
+                  aria-label={t("settings.displayName")}
+                  className="w-40 rounded-md border border-line bg-surface px-2.5 py-1 text-sm text-text outline-none focus:border-accent"
+                />
+              </Field>
+            </div>
           </section>
         </div>
 
@@ -491,13 +640,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
             onClick={reset}
             className="text-xs font-medium text-faint transition-colors hover:text-muted"
           >
-            Reset all settings
+            {t("settings.resetAll")}
           </button>
           <button
             onClick={onClose}
             className="rounded-md bg-accent px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            Done
+            {t("settings.done")}
           </button>
         </div>
       </div>

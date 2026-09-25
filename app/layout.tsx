@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Lora } from "next/font/google";
 import "@/app/globals.css";
-import { FlashcardProvider } from "@/context/FlashcardContext";
+import { FlashcardProvider } from "@/app/components/Flashcard/FlashcardContext";
 import { SettingsProvider } from "@/app/components/settings/SettingsProvider";
+import { I18nProvider } from "@/app/components/i18n/I18nProvider";
 import { WorkspaceProvider } from "@/app/components/workspace/WorkspaceProvider";
 import AppShell from "@/app/components/layout/AppShell";
 
@@ -28,11 +29,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body>
         <SettingsProvider>
-          <WorkspaceProvider>
-            <FlashcardProvider>
-              <AppShell>{children}</AppShell>
-            </FlashcardProvider>
-          </WorkspaceProvider>
+          <I18nProvider>
+            <WorkspaceProvider>
+              <FlashcardProvider>
+                <AppShell>{children}</AppShell>
+              </FlashcardProvider>
+            </WorkspaceProvider>
+          </I18nProvider>
         </SettingsProvider>
       </body>
     </html>

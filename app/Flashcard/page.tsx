@@ -2,19 +2,14 @@
 
 import { useState } from "react";
 import Flashcard from "@/app/components/Flashcard/Flashcard";
-import { useFlashcard } from "@/context/FlashcardContext";
+import { useFlashcard } from "@/app/components/Flashcard/FlashcardContext";
 import ManageMode from "@/app/components/Flashcard/ManageMode";
 import PageHeader from "@/app/components/ui/PageHeader";
 
 export default function Page() {
   const [mode, setMode] = useState<"study" | "manage">("study");
-  const {
-    setIsFlipped,
-    cards,
-    setCards,
-    currentIndex,
-    setCurrentIndex,
-  } = useFlashcard();
+  const { setIsFlipped, cards, setCards, currentIndex, setCurrentIndex } =
+    useFlashcard();
 
   const tabs = (
     <div className="flex rounded-md bg-surface-2 p-0.5">

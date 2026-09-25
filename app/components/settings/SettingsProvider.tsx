@@ -19,15 +19,32 @@ export type DashboardSize =
   | { kind: "preset"; width: number; height: number }
   | { kind: "custom"; width: number; height: number };
 
+export type NotesUnit = "words" | "chars";
+
+export interface PomodoroCycle {
+  focus: number; // minutes
+  break: number; // minutes
+  longBreak: number; // minutes
+  rounds: number; // focus sessions before a long break
+}
+
 export interface Settings {
   theme: Theme;
   accent: Accent;
   fontFamily: FontFamily;
   fontSize: FontSize;
+  /** UI language. Kept as a plain union to avoid importing the i18n module
+      (which itself imports this settings module). */
+  language: "en" | "ja";
   deskTexture: boolean;
   snapping: boolean;
   dashboardSize: DashboardSize;
+  /** Initial board zoom, as a fraction (0.5–2.0 = 50%–200%). */
+  defaultZoom: number;
   displayName: string;
+  spaceTitle: string;
+  notesUnit: NotesUnit;
+  pomodoro: PomodoroCycle;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -35,10 +52,15 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: "indigo",
   fontFamily: "geist",
   fontSize: "md",
+  language: "en",
   deskTexture: true,
   snapping: true,
   dashboardSize: { kind: "fit" },
+  defaultZoom: 1,
   displayName: "Student",
+  spaceTitle: "My Study Space",
+  notesUnit: "words",
+  pomodoro: { focus: 25, break: 5, longBreak: 15, rounds: 4 },
 };
 
 // --- UI metadata -----------------------------------------------------------
@@ -92,6 +114,11 @@ export const DASHBOARD_PRESETS: { label: string; width: number; height: number }
     { label: "1920 × 1200", width: 1920, height: 1200 },
   ];
 
+// Board zoom bounds (fractions). The default-zoom setting and the on-canvas
+// zoom controls share these limits: 50%–200%.
+export const ZOOM_MIN = 0.5;
+export const ZOOM_MAX = 2;
+
 // --- Persistence -----------------------------------------------------------
 
 const STORAGE_KEY = "studytoolkit.settings.v1";
@@ -101,7 +128,11 @@ function loadSettings(): Settings {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      pomodoro: { ...DEFAULT_SETTINGS.pomodoro, ...(parsed.pomodoro ?? {}) },
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -138,6 +169,9 @@ function applySettings(settings: Settings) {
 
   // Desk texture
   root.classList.toggle("no-desk-texture", !settings.deskTexture);
+
+  // Language (also drives the document lang attribute for a11y/SEO).
+  root.setAttribute("lang", settings.language);
 }
 
 // --- Context ---------------------------------------------------------------

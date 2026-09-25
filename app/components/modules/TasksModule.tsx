@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Circle, Plus } from "lucide-react";
+import { Reorder, useDragControls } from "motion/react";
+import { CheckCircle2, Circle, Plus, GripVertical } from "lucide-react";
 import { PriorityBadge, SubjectTag } from "@/app/components/ui/Tags";
-import { Priority, Subject, subjectFromString } from "@/app/components/ui/subjects";
+import {
+  Priority,
+  Subject,
+  subjectFromString,
+} from "@/app/components/ui/subjects";
 
 /**
  * "Today's Tasks" — reuses the existing /api/ToDo data ({ id, task }).
- *
- * Completion, subject, and priority are UI-level enrichments: the existing
- * backend only stores { id, task }, so completion is tracked in component
- * state (functional within the session) and subject/priority are optional
- * metadata inferred locally. This keeps the existing API/data untouched while
- * making the module easy to extend once the backend supports these fields.
+ * Drag the handle to reorder; check to complete. Completion/subject/priority
+ * are UI-level enrichments (backend only stores { id, task }).
  */
 
 interface ApiTask {
   id: string;
   task: string;
-  // Optional fields the backend may add later.
   completed?: boolean;
   subject?: string;
   priority?: Priority;
@@ -30,6 +30,66 @@ interface UiTask {
   completed: boolean;
   subject: Subject;
   priority?: Priority;
+}
+
+function TaskRow({
+  task,
+  onToggle,
+}: {
+  task: UiTask;
+  onToggle: (id: string) => void;
+}) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={task}
+      dragListener={false}
+      dragControls={controls}
+      dragElastic={0}
+      dragMomentum={false}
+      transition={{ duration: 0.12, ease: "linear" }}
+      className="group/task flex items-start gap-2 rounded-md bg-surface py-1.5 hover:bg-surface-2"
+      onPointerDown={(e) => controls.start(e)}
+      onClick={() => onToggle(task.id)}
+    >
+      <button
+        aria-label="Drag to reorder"
+        className="h-100% mt-0.5 cursor-grab touch-none text-faint opacity-0 transition-opacity group-hover/task:opacity-100 active:cursor-grabbing"
+        onClick={(e) => {e.stopPropagation()}}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <button
+        aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
+        className="mt-0.5 text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        {task.completed ? (
+          <CheckCircle2 className="h-4 w-4 text-success" />
+        ) : (
+          <Circle className="h-4 w-4" />
+        )}
+      </button>
+      <div className="min-w-0 max-w-full">
+        <p
+          className={`text-sm leading-snug select-none cursor-default ${
+            task.completed ? "text-faint line-through" : "text-text"
+          }`}
+        >
+          {task.task}
+        </p>
+        <div className="mt-1 flex items-center gap-2 select-none cursor-default">
+          <SubjectTag subject={task.subject} />
+          {task.priority && <PriorityBadge priority={task.priority} />}
+        </div>
+      </div>
+      {/* Blank right area — drag here to reorder the task. */}
+      <div
+        aria-hidden
+        className="min-w-8 flex-1 cursor-grab touch-none self-stretch active:cursor-grabbing"
+        onClick={(e) => {e.stopPropagation()}}
+      />
+    </Reorder.Item>
+  );
 }
 
 export default function TasksModule() {
@@ -99,10 +159,6 @@ export default function TasksModule() {
   const done = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-  // Active tasks first, completed sink to the bottom.
-  const ordered = [...tasks].sort(
-    (a, b) => Number(a.completed) - Number(b.completed),
-  );
 
   return (
     <div className="flex h-full flex-col">
@@ -121,7 +177,7 @@ export default function TasksModule() {
         </div>
       </div>
 
-      <div className="-mx-1 flex-1 space-y-0.5 overflow-y-auto px-1">
+      <div className="-mx-1 flex-1 overflow-y-auto pr-1">
         {loading ? (
           <p className="py-6 text-center text-sm text-faint">Loading…</p>
         ) : total === 0 ? (
@@ -129,41 +185,16 @@ export default function TasksModule() {
             No tasks yet. Add one below.
           </p>
         ) : (
-          ordered.map((t) => (
-            <div
-              key={t.id}
-              className="group/task flex items-start gap-2.5 rounded-md px-1.5 py-1.5 hover:bg-surface-2"
-            >
-              <button
-                onClick={() => toggle(t.id)}
-                aria-label={
-                  t.completed ? "Mark incomplete" : "Mark complete"
-                }
-                className="mt-0.5 text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                {t.completed ? (
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-              </button>
-              <div className="min-w-0 flex-1">
-                <p
-                  className={`text-sm leading-snug ${
-                    t.completed
-                      ? "text-faint line-through"
-                      : "text-text"
-                  }`}
-                >
-                  {t.task}
-                </p>
-                <div className="mt-1 flex items-center gap-2">
-                  <SubjectTag subject={t.subject} />
-                  {t.priority && <PriorityBadge priority={t.priority} />}
-                </div>
-              </div>
-            </div>
-          ))
+          <Reorder.Group
+            axis="y"
+            values={tasks}
+            onReorder={setTasks}
+            className="space-y-0.5"
+          >
+            {tasks.map((t) => (
+              <TaskRow key={t.id} task={t} onToggle={toggle} />
+            ))}
+          </Reorder.Group>
         )}
       </div>
 

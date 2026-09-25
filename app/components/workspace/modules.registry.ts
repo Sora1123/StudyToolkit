@@ -97,9 +97,9 @@ export const MODULES: Record<ModuleType, ModuleDefinition> = {
     category: "Study",
     implemented: true,
     component: TimerModule,
-    defaultSize: { width: 280, height: 260 },
-    minWidth: 240,
-    minHeight: 220,
+    defaultSize: { width: 300, height: 380 },
+    minWidth: 280,
+    minHeight: 360,
   },
   statistics: {
     type: "statistics",

@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { mobileNavItems } from "./nav";
+import { useT } from "@/app/components/i18n/I18nProvider";
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const t = useT();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface/95 backdrop-blur md:hidden">
-      {mobileNavItems.map(({ href, label, icon: Icon }) => {
+      {mobileNavItems.map(({ href, label, labelKey, icon: Icon }) => {
         const active = isActive(href);
         return (
           <Link
@@ -24,7 +26,7 @@ export default function MobileNav() {
             }`}
           >
             <Icon className="h-5 w-5" />
-            {label}
+            {t(labelKey)}
           </Link>
         );
       })}

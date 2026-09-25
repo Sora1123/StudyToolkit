@@ -9,7 +9,7 @@ import {
   Layers,
   Plus,
 } from "lucide-react";
-import { useFlashcard } from "@/context/FlashcardContext";
+import { useFlashcard } from "@/app/components/Flashcard/FlashcardContext";
 
 interface FlashcardProps {
   onEmptyAction?: () => void;

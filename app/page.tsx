@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Plus, X } from "lucide-react";
 import { useWorkspaceContext } from "./components/workspace/WorkspaceProvider";
 import { useSettings } from "./components/settings/SettingsProvider";
 import WorkspaceCanvas from "./components/workspace/WorkspaceCanvas";
 import AddModuleModal from "./components/workspace/AddModuleModal";
 import { MODULES } from "./components/workspace/modules.registry";
+import { useT } from "./components/i18n/I18nProvider";
 
 export default function Home() {
   const { modules, hydrated, addModule, removeModule, updateLayout } =
     useWorkspaceContext();
   const { settings } = useSettings();
+  const t = useT();
   const [addOpen, setAddOpen] = useState(false);
 
   return (
@@ -27,8 +30,8 @@ export default function Home() {
             <div className="hidden flex-1 md:flex md:flex-col">
               <WorkspaceCanvas
                 modules={modules}
-                size={settings.dashboardSize}
                 snapping={settings.snapping}
+                defaultZoom={settings.defaultZoom}
                 onLayoutChange={updateLayout}
                 onRemove={removeModule}
                 onAddFirst={() => setAddOpen(true)}
@@ -40,16 +43,16 @@ export default function Home() {
               {modules.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-line-strong p-8 text-center">
                   <h2 className="text-base font-semibold text-text">
-                    Build your study space
+                    {t("workspace.buildTitle")}
                   </h2>
                   <p className="mt-1.5 text-sm text-muted">
-                    Add the tools you use most and arrange them your way.
+                    {t("workspace.buildSubtitleMobile")}
                   </p>
                   <button
                     onClick={() => setAddOpen(true)}
                     className="mt-4 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white"
                   >
-                    <Plus className="h-4 w-4" /> Add your first module
+                    <Plus className="h-4 w-4" /> {t("workspace.addFirst")}
                   </button>
                 </div>
               ) : (
@@ -81,7 +84,7 @@ export default function Home() {
                           <Content />
                         ) : (
                           <div className="flex h-full items-center justify-center text-sm text-faint">
-                            Coming soon
+                            {t("common.comingSoon")}
                           </div>
                         )}
                       </div>
@@ -95,14 +98,19 @@ export default function Home() {
       </div>
 
       {/* Floating "Add module" button — bottom-right circular FAB */}
-      <button
+      <motion.button
         onClick={() => setAddOpen(true)}
-        aria-label="Add module"
-        title="Add module"
+        aria-label={t("workspace.addModule")}
+        title={t("workspace.addModule")}
+        initial={{ scale: 0, rotate: -90 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.2 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
         className="fixed bottom-20 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-8 md:right-8"
       >
         <Plus className="h-6 w-6" />
-      </button>
+      </motion.button>
 
       <AddModuleModal
         open={addOpen}

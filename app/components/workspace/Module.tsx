@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
-import { GripVertical, MoreVertical, X } from "lucide-react";
+import { motion } from "motion/react";
+import { GripVertical, MoreVertical, Trash2 } from "lucide-react";
 import { ModuleDefinition } from "./modules.registry";
 import {
   Guides,
   Rect,
-  resolveOverlap,
   snapDrag,
   snapResize,
 } from "./snapping";
+import { useT } from "@/app/components/i18n/I18nProvider";
 
 export interface ModuleLayout {
   x: number;
@@ -45,6 +46,7 @@ export default function Module({
   onRemove,
   onGuides,
 }: ModuleProps) {
+  const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const Content = def.component;
@@ -116,17 +118,13 @@ export default function Module({
       dragRef.current = null;
       setDragPos((current) => {
         if (d && current) {
-          const moving: Rect = {
-            x: current.x,
-            y: current.y,
-            width: layout.width,
-            height: layout.height,
-          };
-          const finalRect = snapping ? resolveOverlap(moving, others) : moving;
+          // Free placement — overlap is allowed (modules may stack), and
+          // negative coordinates are allowed so modules can live in the
+          // left/top area revealed when the board is zoomed in.
           onLayoutChange({
             ...layout,
-            x: Math.max(0, finalRect.x),
-            y: Math.max(0, finalRect.y),
+            x: current.x,
+            y: current.y,
           });
         }
         return null;
@@ -203,8 +201,9 @@ export default function Module({
       }}
       minWidth={def.minWidth ?? 220}
       minHeight={def.minHeight ?? 180}
-      bounds="parent"
       scale={scale}
+      // Discrete resize snapped to the 22px desk-texture dot grid.
+      resizeGrid={[22, 22]}
       className="group/module"
       resizeHandleClasses={{
         bottomRight:
@@ -218,7 +217,10 @@ export default function Module({
         ),
       }}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
         className={`flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
           dragPos ? "shadow-[0_8px_24px_rgba(0,0,0,0.10)]" : ""
         }`}
@@ -238,7 +240,7 @@ export default function Module({
 
           <div ref={menuRef} data-no-drag className="relative opacity-0 transition-opacity group-hover/module:opacity-100">
             <button
-              aria-label="Module options"
+              aria-label={t("module.options")}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((o) => !o)}
@@ -259,7 +261,7 @@ export default function Module({
                   }}
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger transition-colors hover:bg-danger-soft"
                 >
-                  <X className="h-3.5 w-3.5" /> Remove module
+                  <Trash2 className="h-3.5 w-3.5" /> {t("module.remove")}
                 </button>
               </div>
             )}
@@ -272,11 +274,11 @@ export default function Module({
             <Content />
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-faint">
-              Coming soon
+              {t("common.comingSoon")}
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </Rnd>
   );
 }

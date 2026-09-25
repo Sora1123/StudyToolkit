@@ -36,10 +36,10 @@ function defaultModules(): WorkspaceModule[] {
   return [
     place("tasks", 24, 24),
     place("timer", 388, 24),
-    place("flashcards", 692, 24),
+    place("flashcards", 708, 24),
     place("upcoming", 24, 428),
     place("notes", 408, 428),
-    place("statistics", 728, 340),
+    place("statistics", 744, 344),
   ];
 }
 

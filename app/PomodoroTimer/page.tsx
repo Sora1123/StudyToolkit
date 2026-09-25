@@ -1,5 +1,6 @@
 import Timer from "@/app/components/Timer";
 import PageHeader from "@/app/components/ui/PageHeader";
+import TimerModule from "../components/modules/TimerModule";
 
 export default function Page() {
   return (
@@ -9,7 +10,7 @@ export default function Page() {
         description="Focus in timed study and rest intervals."
       />
       <div className="flex flex-1 items-center justify-center p-6">
-        <Timer />
+        <TimerModule />
       </div>
     </div>
   );
