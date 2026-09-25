@@ -1,18 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search, Bell, Plus, RotateCcw, X } from "lucide-react";
 import { useWorkspace } from "./components/workspace/useWorkspace";
 import WorkspaceCanvas from "./components/workspace/WorkspaceCanvas";
 import AddModuleModal from "./components/workspace/AddModuleModal";
 import { MODULES } from "./components/workspace/modules.registry";
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 export default function Home() {
   const {
@@ -25,11 +19,21 @@ export default function Home() {
   } = useWorkspace();
   const [addOpen, setAddOpen] = useState(false);
 
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const hour = new Date().getHours();
+
+    if (hour < 12) {
+      setGreeting("Good morning. What are you working on?");
+    } else if (hour < 18) {
+      setGreeting("Good afternoon. What are you working on?");
+    } else {
+      setGreeting("Good evening. What are you working on?");
+    }
+  }, []);
+
   // Greeting is computed once per mount (client only) to avoid SSR mismatch.
-  const subtitle = useMemo(
-    () => `${greeting()}. What are you working on?`,
-    [],
-  );
+  const subtitle = useMemo(() => `${greeting}. What are you working on?`, []);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -40,9 +44,7 @@ export default function Home() {
             <h1 className="text-lg font-semibold tracking-tight text-text sm:text-xl">
               My Study Space
             </h1>
-            <p className="truncate text-xs text-muted sm:text-sm">
-              {subtitle}
-            </p>
+            <p className="truncate text-xs text-muted sm:text-sm">{subtitle}</p>
           </div>
 
           {/* Search (visual + accessible; wired to filter later) */}
