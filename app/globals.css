@@ -101,6 +101,9 @@ body {
 .desk-canvas {
   background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
   background-size: 22px 22px;
+  /* Center each dot on a multiple of 22 (the module grid), so a module's
+     top-left corner sits exactly on a dot. */
+  background-position: 11px 11px;
 }
 
 .no-desk-texture .desk-canvas {

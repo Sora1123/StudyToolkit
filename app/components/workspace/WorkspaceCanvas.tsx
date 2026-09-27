@@ -147,8 +147,15 @@ export default function WorkspaceCanvas({
       >
         {ready && (
           <div
-            className="relative h-full w-full origin-center"
-            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+            className="relative origin-top-left"
+            style={{
+              // Snap the board to a whole number of 22px dot cells so its
+              // right/bottom edges also land on dot lines (the top-left corner
+              // is already the board origin dot). Falls back to the raw size.
+              width: Math.floor(viewport.width / 22) * 22,
+              height: Math.floor(viewport.height / 22) * 22,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            }}
           >
             {/* Dotted desk texture — oversized so the grid keeps covering the
                 margins that become visible when the board is zoomed in. The

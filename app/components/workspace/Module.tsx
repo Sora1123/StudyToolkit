@@ -200,7 +200,7 @@ export default function Module({
         });
       }}
       minWidth={def.minWidth ?? 220}
-      minHeight={def.minHeight ?? 180}
+      minHeight={def.minHeight ?? 176}
       scale={scale}
       // Discrete resize snapped to the 22px desk-texture dot grid.
       resizeGrid={[22, 22]}

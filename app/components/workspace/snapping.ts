@@ -27,7 +27,7 @@ export interface Guides {
 }
 
 export const snapToGrid = (value: number, grid = GRID) =>
-  Math.round(value / grid) * grid + 11;
+  Math.round(value / grid) * grid;
 
 /** The candidate alignment coordinates a rect exposes on each axis (edges only). */
 function xTargets(r: Rect): number[] {

@@ -21,12 +21,39 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // Runs before first paint to set the theme class on <html>, so the initial
+  // (loading) background matches the saved dark/light setting instead of
+  // flashing the default light background until React hydrates.
+  const themeScript = `
+(function () {
+  try {
+    var raw = localStorage.getItem("studytoolkit.settings.v1");
+    var theme = "system";
+    var lang = "en";
+    if (raw) {
+      var s = JSON.parse(raw);
+      if (s && typeof s.theme === "string") theme = s.theme;
+      if (s && typeof s.language === "string") lang = s.language;
+    }
+    var prefersDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var isDark = theme === "dark" || (theme === "system" && prefersDark);
+    var root = document.documentElement;
+    root.classList.toggle("dark", isDark);
+    root.setAttribute("lang", lang);
+  } catch (e) {}
+})();
+`;
   return (
     <html
       lang="en"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <SettingsProvider>
           <I18nProvider>

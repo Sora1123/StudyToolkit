@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
 import FlipClock from "./FlipClock";
 import { useSettings } from "@/app/components/settings/SettingsProvider";
@@ -79,11 +79,31 @@ export default function TimerModule() {
   const label =
     phase === "focus" ? "Focus" : phase === "break" ? "Break" : "Long break";
 
-  const R = 92;
+  // Measure the area reserved for the ring so the whole timer (ring + flip
+  // clock) scales with the module size.
+  const ringWrapRef = useRef<HTMLDivElement>(null);
+  const [ringSize, setRingSize] = useState(200);
+  useLayoutEffect(() => {
+    const el = ringWrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const s = Math.min(el.clientWidth, el.clientHeight);
+      // Clamp so it stays legible in tiny modules and not absurd in huge ones.
+      setRingSize(Math.max(120, Math.min(360, Math.floor(s))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Digit height scales from the ring so the clock fits inside the circle.
+  const digitSize = Math.max(20, Math.round(ringSize * 0.3));
+
+  const R = 82;
   const C = 2 * Math.PI * R;
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3">
+    <div className="flex h-full flex-col items-center gap-3 py-1">
       <span
         className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
           isFocus ? "bg-accent-soft text-accent" : "bg-success-soft text-success"
@@ -92,24 +112,42 @@ export default function TimerModule() {
         {label}
       </span>
 
-      <div className="relative flex items-center justify-center">
-        <svg width="200" height="200" viewBox="0 0 200 200" className="rotate-[-90deg]">
-          <circle cx="100" cy="100" r={R} fill="none" stroke="var(--line)" strokeWidth="4" />
-          <circle
-            cx="100"
-            cy="100"
-            r={R}
-            fill="none"
-            stroke={accentVar}
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeDasharray={C}
-            strokeDashoffset={C * (1 - progress)}
-            style={{ transition: "stroke-dashoffset 0.8s linear" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <FlipClock minutes={minutes} seconds={secs} accent={accentVar} />
+      <div
+        ref={ringWrapRef}
+        className="flex min-h-0 w-full flex-1 items-center justify-center"
+      >
+        <div
+          className="relative flex items-center justify-center"
+          style={{ width: ringSize, height: ringSize }}
+        >
+          <svg
+            width={ringSize}
+            height={ringSize}
+            viewBox="0 0 200 200"
+            className="rotate-[-90deg]"
+          >
+            <circle cx="100" cy="100" r={R} fill="none" stroke="var(--line)" strokeWidth="4" />
+            <circle
+              cx="100"
+              cy="100"
+              r={R}
+              fill="none"
+              stroke={accentVar}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={C}
+              strokeDashoffset={C * (1 - progress)}
+              style={{ transition: "stroke-dashoffset 0.8s linear" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <FlipClock
+              minutes={minutes}
+              seconds={secs}
+              accent={accentVar}
+              size={digitSize}
+            />
+          </div>
         </div>
       </div>
 

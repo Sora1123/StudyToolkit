@@ -18,6 +18,9 @@ export default function FlashcardsModule() {
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // When navigating between cards we snap the flip back to the front with no
+  // animation, so the un-flip doesn't briefly reveal the next card's answer.
+  const [animateFlip, setAnimateFlip] = useState(true);
   const [adding, setAdding] = useState(false);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
@@ -42,6 +45,9 @@ export default function FlashcardsModule() {
 
   const go = useCallback(
     (delta: number) => {
+      // Snap back to the front instantly (no flip animation) before switching
+      // cards, so the answer of the incoming card isn't briefly shown.
+      setAnimateFlip(false);
       setFlipped(false);
       setIndex((i) =>
         Math.min(Math.max(0, cards.length - 1), Math.max(0, i + delta)),
@@ -49,6 +55,12 @@ export default function FlashcardsModule() {
     },
     [cards.length],
   );
+
+  // Re-enable flip animation once the front is showing again after a nav.
+  const flipCard = useCallback(() => {
+    setAnimateFlip(true);
+    setFlipped((f) => !f);
+  }, []);
 
   // Keyboard support — active while the module has focus (click it to focus).
   // Up/Down flip the card; Left/Right change cards.
@@ -69,12 +81,12 @@ export default function FlashcardsModule() {
       } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         e.preventDefault();
         e.stopPropagation();
-        setFlipped((f) => !f);
+        flipCard();
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () => window.removeEventListener("keydown", onKey, { capture: true });
-  }, [go, adding]);
+  }, [go, flipCard, adding]);
 
   const addCard = async () => {
     if (!front.trim() || !back.trim()) return;
@@ -93,6 +105,7 @@ export default function FlashcardsModule() {
       setFront("");
       setBack("");
       setAdding(false);
+      setAnimateFlip(false);
       setFlipped(false);
     } catch (e) {
       console.error("Failed to add card:", e);
@@ -179,7 +192,7 @@ export default function FlashcardsModule() {
           <div
             className="relative flex-1 cursor-pointer"
             style={{ perspective: 1000 }}
-            onClick={() => setFlipped((f) => !f)}
+            onClick={flipCard}
             role="button"
             aria-label="Flip card"
           >
@@ -187,7 +200,11 @@ export default function FlashcardsModule() {
               className="absolute inset-0"
               style={{ transformStyle: "preserve-3d" }}
               animate={{ rotateX: flipped ? 180 : 0 }}
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              transition={
+                animateFlip
+                  ? { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                  : { duration: 0 }
+              }
             >
               {/* Front */}
               <div

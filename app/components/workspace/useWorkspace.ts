@@ -27,19 +27,20 @@ function defaultModules(): WorkspaceModule[] {
     id: `${type}-${Math.random().toString(36).slice(2, 8)}`,
     type,
     layout: {
-      x,
-      y,
+      // Snap to the 22px grid so each module's top-left corner lands on a dot.
+      x: Math.round(x / 22) * 22,
+      y: Math.round(y / 22) * 22,
       width: MODULES[type].defaultSize.width,
       height: MODULES[type].defaultSize.height,
     },
   });
   return [
-    place("tasks", 24, 24),
-    place("timer", 388, 24),
-    place("flashcards", 708, 24),
-    place("upcoming", 24, 428),
-    place("notes", 408, 428),
-    place("statistics", 744, 344),
+    place("tasks", 22, 22),
+    place("timer", 374, 22),
+    place("flashcards", 726, 22),
+    place("upcoming", 22, 374),
+    place("notes", 374, 374),
+    place("statistics", 726, 374),
   ];
 }
 
@@ -84,16 +85,17 @@ export function useWorkspace() {
   const addModule = useCallback((type: ModuleType) => {
     setModules((prev) => {
       const def = MODULES[type];
-      // Cascade new modules slightly so they don't stack exactly.
-      const offset = prev.length * 24;
+      // Cascade new modules slightly so they don't stack exactly, keeping the
+      // top-left corner on the 22px grid so it lands on a dot.
+      const offset = prev.length * 22;
       return [
         ...prev,
         {
           id: `${type}-${Math.random().toString(36).slice(2, 8)}`,
           type,
           layout: {
-            x: 24 + (offset % 240),
-            y: 24 + (offset % 120),
+            x: 22 + (offset % 242),
+            y: 22 + (offset % 132),
             width: def.defaultSize.width,
             height: def.defaultSize.height,
           },
