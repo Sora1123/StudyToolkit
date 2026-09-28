@@ -13,7 +13,7 @@ export default function MobileNav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface/95 backdrop-blur md:hidden">
+    <nav className="glass fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface md:hidden">
       {mobileNavItems.map(({ href, label, labelKey, icon: Icon }) => {
         const active = isActive(href);
         return (

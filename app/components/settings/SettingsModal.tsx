@@ -275,7 +275,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+      <div className="glass relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <h2 className="text-sm font-semibold text-text">{t("settings.title")}</h2>
           <button
@@ -360,6 +360,14 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   label={t("settings.deskTexture")}
                   checked={settings.deskTexture}
                   onChange={(v) => update({ deskTexture: v })}
+                />
+              </Field>
+
+              <Field label={t("settings.liquidGlass")}>
+                <Toggle
+                  label={t("settings.liquidGlass")}
+                  checked={settings.liquidGlass}
+                  onChange={(v) => update({ liquidGlass: v })}
                 />
               </Field>
 

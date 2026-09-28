@@ -221,7 +221,7 @@ export default function Module({
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        className={`flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
+        className={`glass flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
           dragPos ? "shadow-[0_8px_24px_rgba(0,0,0,0.10)]" : ""
         }`}
       >
@@ -268,8 +268,9 @@ export default function Module({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="min-h-0 flex-1 overflow-auto p-3">
+        {/* Content — kept on a solid surface so dense text stays legible even
+            when the panel uses the translucent liquid-glass treatment. */}
+        <div className="min-h-0 flex-1 overflow-auto bg-surface p-3">
           {Content ? (
             <Content />
           ) : (

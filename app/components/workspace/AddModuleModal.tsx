@@ -57,7 +57,7 @@ export default function AddModuleModal({
             aria-hidden="true"
           />
           <motion.div
-            className="relative w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
+            className="glass relative w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}

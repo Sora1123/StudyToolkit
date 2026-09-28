@@ -27,6 +27,19 @@
   --subject-default: #6b6a65;
   --font-scale: 1;
   --font-app: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Liquid-glass tokens (light). Only consumed when .liquid-glass is set. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 16px;
+  --glass-saturate: 180%;
+  --glass-shadow: 0 8px 32px rgba(31, 30, 28, 0.12);
+  /* Soft ambient wash painted behind the desk so the frost has something to
+     blur. Subtle enough not to fight the near-white background. */
+  --glass-wash:
+    radial-gradient(60% 55% at 15% 10%, color-mix(in oklab, var(--accent) 14%, transparent), transparent 70%),
+    radial-gradient(55% 50% at 90% 20%, color-mix(in oklab, var(--subject-science) 12%, transparent), transparent 70%),
+    radial-gradient(60% 60% at 75% 95%, color-mix(in oklab, var(--subject-math) 12%, transparent), transparent 70%);
 }
 
 .dark {
@@ -42,6 +55,11 @@
   --success-soft: #16281c;
   --warning-soft: #302512;
   --danger-soft: #331c1c;
+
+  /* Liquid-glass tokens (dark). Darker, lower-opacity fill + faint top edge. */
+  --glass-bg: rgba(35, 35, 34, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
 @theme inline {
@@ -108,6 +126,56 @@ body {
 
 .no-desk-texture .desk-canvas {
   background-image: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Liquid glass (opt-in via .liquid-glass on <html>).
+
+   The .glass utility is a no-op by default so it can be sprinkled onto chrome
+   without changing the standard theme. It only "turns on" the frosted look
+   when the liquid-glass class is active. Anything relying on a solid bg should
+   pair `.glass` with its normal `bg-*` class as the fallback.
+--------------------------------------------------------------------------- */
+.liquid-glass .glass {
+  background-color: var(--glass-bg) !important;
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow);
+}
+
+/* Ambient wash behind the desk so the frost reads as glass rather than a flat
+   tint. Sits under the dot texture; both are painted on the same canvas. */
+.liquid-glass .desk-canvas {
+  background-image:
+    radial-gradient(var(--line-strong) 1px, transparent 1px),
+    var(--glass-wash);
+  background-size: 22px 22px, cover;
+  background-position: 11px 11px, center;
+}
+.liquid-glass.no-desk-texture .desk-canvas,
+.liquid-glass .no-desk-texture .desk-canvas {
+  background-image: var(--glass-wash);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Accessibility: users who ask for reduced transparency get the solid theme
+   back (the paired bg-* class shows through since we drop the override). */
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass .glass {
+    background-color: var(--surface) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Graceful degradation: browsers without backdrop-filter fall back to a more
+   opaque fill so text stays legible over the wash. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .liquid-glass .glass {
+    background-color: color-mix(in oklab, var(--surface) 92%, transparent) !important;
+  }
 }
 
 /* Hide scrollbars everywhere while keeping scroll/pan — no visible bar. */

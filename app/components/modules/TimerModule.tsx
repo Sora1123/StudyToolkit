@@ -89,7 +89,7 @@ export default function TimerModule() {
     const measure = () => {
       const s = Math.min(el.clientWidth, el.clientHeight);
       // Clamp so it stays legible in tiny modules and not absurd in huge ones.
-      setRingSize(Math.max(120, Math.min(360, Math.floor(s))));
+      setRingSize(Math.max(120, Math.min(560, Math.floor(s))));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -97,7 +97,7 @@ export default function TimerModule() {
     return () => ro.disconnect();
   }, []);
   // Digit height scales from the ring so the clock fits inside the circle.
-  const digitSize = Math.max(20, Math.round(ringSize * 0.3));
+  const digitSize = Math.max(50, Math.min(100, Math.round(ringSize * 0.3)));
 
   const R = 82;
   const C = 2 * Math.PI * R;
