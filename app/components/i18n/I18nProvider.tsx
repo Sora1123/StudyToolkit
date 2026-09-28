@@ -32,6 +32,9 @@ const en = {
   "app.soon": "Soon",
   "app.openSidebar": "Open sidebar",
   "app.settings": "Settings",
+  "app.signIn": "Sign in with Google",
+  "app.signOut": "Sign out",
+  "app.signInHint": "Sign in to sync and access Google Drive.",
 
   // Navigation / titles
   "nav.dashboard": "Dashboard",
@@ -84,6 +87,7 @@ const en = {
   "settings.font": "Font",
   "settings.fontSize": "Base font size",
   "settings.deskTexture": "Desk texture",
+  "settings.liquidGlass": "Liquid glass",
   "settings.language": "Language",
   "settings.dashboardSize": "Dashboard size",
   "settings.dashboardSize.fit": "Fit to window",
@@ -127,6 +131,9 @@ const ja: Partial<Record<TranslationKey, string>> = {
   "app.soon": "近日公開",
   "app.openSidebar": "サイドバーを開く",
   "app.settings": "設定",
+  "app.signIn": "Googleでサインイン",
+  "app.signOut": "サインアウト",
+  "app.signInHint": "サインインすると同期とGoogleドライブが利用できます。",
 
   // Navigation / titles
   "nav.dashboard": "ダッシュボード",
@@ -179,6 +186,7 @@ const ja: Partial<Record<TranslationKey, string>> = {
   "settings.font": "フォント",
   "settings.fontSize": "基本フォントサイズ",
   "settings.deskTexture": "デスクの質感",
+  "settings.liquidGlass": "リキッドガラス",
   "settings.language": "言語",
   "settings.dashboardSize": "ダッシュボードのサイズ",
   "settings.dashboardSize.fit": "ウィンドウに合わせる",

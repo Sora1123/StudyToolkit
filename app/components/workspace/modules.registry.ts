@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Link2,
   CalendarClock,
+  HardDrive,
   LucideIcon,
 } from "lucide-react";
 import { ComponentType } from "react";
@@ -21,6 +22,9 @@ import StatisticsModule from "@/app/components/modules/StatisticsModule";
 import CalculatorModule from "@/app/components/modules/CalculatorModule";
 import ResourcesModule from "@/app/components/modules/ResourcesModule";
 import UpcomingModule from "@/app/components/modules/UpcomingModule";
+import CalendarModule from "@/app/components/modules/CalendarModule";
+import QuickLinksModule from "@/app/components/modules/QuickLinksModule";
+import DriveModule from "@/app/components/modules/DriveModule";
 
 export type ModuleType =
   | "tasks"
@@ -32,7 +36,8 @@ export type ModuleType =
   | "resources"
   | "calculator"
   | "calendar"
-  | "quicklinks";
+  | "quicklinks"
+  | "drive";
 
 export type ModuleCategory = "Study" | "Utilities";
 
@@ -155,8 +160,11 @@ export const MODULES: Record<ModuleType, ModuleDefinition> = {
     description: "A month view of your schedule.",
     icon: Calendar,
     category: "Utilities",
-    implemented: false,
-    defaultSize: { width: 352, height: 330 },
+    implemented: true,
+    component: CalendarModule,
+    defaultSize: { width: 352, height: 396 },
+    minWidth: 286,
+    minHeight: 330,
   },
   quicklinks: {
     type: "quicklinks",
@@ -164,8 +172,23 @@ export const MODULES: Record<ModuleType, ModuleDefinition> = {
     description: "Shortcuts to your most-used tools and sites.",
     icon: Link2,
     category: "Utilities",
-    implemented: false,
-    defaultSize: { width: 308, height: 242 },
+    implemented: true,
+    component: QuickLinksModule,
+    defaultSize: { width: 308, height: 308 },
+    minWidth: 242,
+    minHeight: 198,
+  },
+  drive: {
+    type: "drive",
+    title: "Google Drive",
+    description: "Open your Drive PDFs and images.",
+    icon: HardDrive,
+    category: "Utilities",
+    implemented: true,
+    component: DriveModule,
+    defaultSize: { width: 330, height: 352 },
+    minWidth: 264,
+    minHeight: 220,
   },
 };
 

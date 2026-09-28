@@ -36,7 +36,7 @@ export const navItems: NavItem[] = [
     icon: Layers,
     implemented: true,
   },
-  { href: "/", label: "Notes", labelKey: "nav.notes", icon: StickyNote, implemented: false },
+  { href: "/Notes", label: "Notes", labelKey: "nav.notes", icon: StickyNote, implemented: true },
   {
     href: "/PomodoroTimer",
     label: "Timer",
@@ -44,7 +44,7 @@ export const navItems: NavItem[] = [
     icon: Timer,
     implemented: true,
   },
-  { href: "/", label: "Resources", labelKey: "nav.resources", icon: FolderOpen, implemented: false },
+  { href: "/Resources", label: "Resources", labelKey: "nav.resources", icon: FolderOpen, implemented: true },
 ];
 
 /** Items surfaced in the compact mobile bottom navigation. */
