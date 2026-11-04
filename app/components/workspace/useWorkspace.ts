@@ -49,6 +49,7 @@ function defaultModules(): WorkspaceModule[] {
     { type: "upcoming", span: 1 },
     { type: "notes", span: 2 },
     { type: "statistics", span: 1 },
+    { type: "calculator", span: 1 },
   ];
   return spec.map((s, i) => ({
     id: `${s.type}-${Math.random().toString(36).slice(2, 8)}`,
