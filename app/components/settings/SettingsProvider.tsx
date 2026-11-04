@@ -37,8 +37,6 @@ export interface Settings {
       (which itself imports this settings module). */
   language: "en" | "ja";
   deskTexture: boolean;
-  /** Frosted "liquid glass" treatment on app chrome (opt-in). */
-  liquidGlass: boolean;
   snapping: boolean;
   dashboardSize: DashboardSize;
   /** Initial board zoom, as a fraction (0.5–2.0 = 50%–200%). */
@@ -56,7 +54,6 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: "md",
   language: "en",
   deskTexture: true,
-  liquidGlass: false,
   snapping: true,
   dashboardSize: { kind: "fit" },
   defaultZoom: 1,
@@ -169,12 +166,6 @@ function applySettings(settings: Settings) {
     "--font-scale",
     String(FONT_SIZES[settings.fontSize].scale),
   );
-
-  // Desk texture
-  root.classList.toggle("no-desk-texture", !settings.deskTexture);
-
-  // Liquid glass chrome (opt-in frosted treatment)
-  root.classList.toggle("liquid-glass", settings.liquidGlass);
 
   // Language (also drives the document lang attribute for a11y/SEO).
   root.setAttribute("lang", settings.language);

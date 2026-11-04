@@ -1,50 +1,68 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Rnd } from "react-rnd";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { GripVertical, MoreVertical, Trash2 } from "lucide-react";
 import { ModuleDefinition } from "./modules.registry";
-import {
-  Guides,
-  Rect,
-  snapDrag,
-  snapResize,
-} from "./snapping";
 import { useT } from "@/app/components/i18n/I18nProvider";
 
+/**
+ * Masonry grid geometry. Both dimensions are discrete: width is a whole number
+ * of columns; height a whole number of chunky ROW_UNIT tracks (separated by
+ * ROW_GAP). Discrete steps make resizing snap cleanly and let
+ * `grid-auto-flow: dense` pack short modules into the vertical gaps above
+ * taller neighbours.
+ */
+export const ROW_UNIT = 64; // px per grid row track (chunky step)
+export const ROW_GAP = 12; // px gap between tracks/columns (matches grid gap)
+export const MIN_ROWS = 2;
+
+/** Masonry-grid layout for a module: column span, discrete row span, order. */
 export interface ModuleLayout {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  /** Number of grid columns the module spans (>= 1). */
+  span: number;
+  /** Number of chunky row tracks the module spans (discrete height). */
+  rows: number;
+  /** Position in the flow (ascending). */
+  order: number;
+}
+
+/** Total pixel height of a given row span (tracks + inter-track gaps). */
+export function pxForRows(rows: number): number {
+  return rows * ROW_UNIT + (rows - 1) * ROW_GAP;
 }
 
 interface ModuleProps {
   def: ModuleDefinition;
   layout: ModuleLayout;
-  /** Rects of all *other* modules, for alignment + overlap snapping. */
-  others: Rect[];
-  /** When false, drag/resize are free (no snap, guides, or overlap resolve). */
-  snapping: boolean;
-  /** Current board zoom, so pointer deltas and react-rnd resize are corrected. */
-  scale: number;
+  /** Minimum discrete rows this module may shrink to. */
+  minRows: number;
+  /** Maximum columns available at the current screen width. */
+  maxCols: number;
+  /** Pixel width of a single grid column (for width-drag math). */
+  colWidth: number;
+  /** True while this module is the one being dragged for reorder. */
+  dragging: boolean;
   onLayoutChange: (layout: ModuleLayout) => void;
   onRemove: () => void;
-  onGuides: (guides: Guides) => void;
+  /** Reorder drag lifecycle (pointer-based). */
+  onDragStart: () => void;
+  onDragEnter: () => void;
+  onDragEnd: () => void;
 }
-
-const emptyGuides: Guides = { vertical: [], horizontal: [] };
 
 export default function Module({
   def,
   layout,
-  others,
-  snapping,
-  scale,
+  minRows,
+  maxCols,
+  colWidth,
+  dragging,
   onLayoutChange,
   onRemove,
-  onGuides,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
 }: ModuleProps) {
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,100 +70,53 @@ export default function Module({
   const Content = def.component;
   const Icon = def.icon;
 
-  // --- Custom magnetic drag ------------------------------------------------
-  // We own the position during a drag and set it directly from pointer math,
-  // running it through snapDrag. Because nothing else fights this value, the
-  // module sits pinned on the snap line within the detent zone (smooth magnet).
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const dragRef = useRef<{
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-  } | null>(null);
-  // Holds the active window listeners so we can detach without self-reference.
-  const listenersRef = useRef<{
-    move: (e: PointerEvent) => void;
-    up: () => void;
-  } | null>(null);
-
-  const pos = dragPos ?? { x: layout.x, y: layout.y };
-
-  const onHeaderPointerDown = (e: React.PointerEvent) => {
-    // Don't start a drag from the options menu button.
-    if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
-    if (e.button !== 0) return;
-    e.preventDefault();
-
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      originX: layout.x,
-      originY: layout.y,
-    };
-    setDragPos({ x: layout.x, y: layout.y });
-
-    const move = (ev: PointerEvent) => {
-      const d = dragRef.current;
-      if (!d) return;
-      // Divide by zoom because the board is CSS-scaled.
-      const rawX = d.originX + (ev.clientX - d.startX) / scale;
-      const rawY = d.originY + (ev.clientY - d.startY) / scale;
-
-      if (!snapping) {
-        setDragPos({ x: rawX, y: rawY });
-        return;
-      }
-      const moving: Rect = {
-        x: rawX,
-        y: rawY,
-        width: layout.width,
-        height: layout.height,
-      };
-      const { x, y, guides } = snapDrag(moving, others);
-      onGuides(guides);
-      setDragPos({ x, y });
-    };
-
-    const up = () => {
-      if (listenersRef.current) {
-        window.removeEventListener("pointermove", listenersRef.current.move);
-        window.removeEventListener("pointerup", listenersRef.current.up);
-        listenersRef.current = null;
-      }
-      onGuides(emptyGuides);
-      const d = dragRef.current;
-      dragRef.current = null;
-      setDragPos((current) => {
-        if (d && current) {
-          // Free placement — overlap is allowed (modules may stack), and
-          // negative coordinates are allowed so modules can live in the
-          // left/top area revealed when the board is zoomed in.
-          onLayoutChange({
-            ...layout,
-            x: current.x,
-            y: current.y,
-          });
-        }
-        return null;
-      });
-    };
-
-    listenersRef.current = { move, up };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-
-  // Detach any active drag listeners on unmount.
+  // --- Resize (drag edges/corner) — snaps to whole row + column steps ------
+  // Keep the latest layout/limits in a ref so the pointer handlers (attached
+  // once per drag) always read current values without re-subscribing.
+  const stateRef = useRef({ layout, minRows, maxCols, colWidth, onLayoutChange });
   useEffect(() => {
-    return () => {
-      if (listenersRef.current) {
-        window.removeEventListener("pointermove", listenersRef.current.move);
-        window.removeEventListener("pointerup", listenersRef.current.up);
-        listenersRef.current = null;
-      }
-    };
-  }, []);
+    stateRef.current = { layout, minRows, maxCols, colWidth, onLayoutChange };
+  });
+
+  const startResize = useCallback(
+    (axis: "x" | "y" | "xy") => (e: React.PointerEvent) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let startRows = -1;
+      let startSpan = -1;
+
+      const move = (ev: PointerEvent) => {
+        const s = stateRef.current;
+        if (startRows < 0) {
+          startRows = s.layout.rows;
+          startSpan = s.layout.span;
+        }
+        let nextRows = s.layout.rows;
+        let nextSpan = s.layout.span;
+        if (axis === "y" || axis === "xy") {
+          const deltaRows = Math.round((ev.clientY - startY) / (ROW_UNIT + ROW_GAP));
+          nextRows = Math.max(s.minRows, startRows + deltaRows);
+        }
+        if ((axis === "x" || axis === "xy") && s.colWidth > 0) {
+          const deltaCols = Math.round((ev.clientX - startX) / (s.colWidth + ROW_GAP));
+          nextSpan = Math.min(Math.max(1, s.maxCols), Math.max(1, startSpan + deltaCols));
+        }
+        if (nextRows !== s.layout.rows || nextSpan !== s.layout.span) {
+          s.onLayoutChange({ ...s.layout, rows: nextRows, span: nextSpan });
+        }
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    },
+    [],
+  );
 
   // Close the options menu on outside click.
   useEffect(() => {
@@ -160,126 +131,112 @@ export default function Module({
   }, [menuOpen]);
 
   return (
-    <Rnd
-      size={{ width: layout.width, height: layout.height }}
-      position={pos}
-      // Dragging is handled by our custom magnetic pointer logic below.
-      disableDragging
-      onResize={(_e, _dir, ref, _delta, position) => {
-        if (!snapping) return;
-        const { guides } = snapResize(
-          position,
-          ref.offsetWidth,
-          ref.offsetHeight,
-          others,
-        );
-        onGuides(guides);
-      }}
-      onResizeStop={(_e, _dir, ref, _delta, position) => {
-        if (!snapping) {
-          onLayoutChange({
-            x: position.x,
-            y: position.y,
-            width: ref.offsetWidth,
-            height: ref.offsetHeight,
-          });
-          return;
-        }
-        const { width, height } = snapResize(
-          position,
-          ref.offsetWidth,
-          ref.offsetHeight,
-          others,
-        );
-        onGuides(emptyGuides);
-        onLayoutChange({
-          x: position.x,
-          y: position.y,
-          width,
-          height,
-        });
-      }}
-      minWidth={def.minWidth ?? 220}
-      minHeight={def.minHeight ?? 176}
-      scale={scale}
-      // Discrete resize snapped to the 22px desk-texture dot grid.
-      resizeGrid={[22, 22]}
-      className="group/module"
-      resizeHandleClasses={{
-        bottomRight:
-          "!h-4 !w-4 opacity-0 transition-opacity group-hover/module:opacity-100",
-      }}
-      resizeHandleComponent={{
-        bottomRight: (
-          <div className="flex h-full w-full items-end justify-end p-0.5">
-            <div className="h-2.5 w-2.5 rounded-br-sm border-b-2 border-r-2 border-line-strong" />
-          </div>
-        ),
-      }}
+    <motion.div
+      layout
+      onPointerEnter={() => onDragEnter()}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: dragging ? 0.6 : 1, scale: 1 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className={`group/module relative flex h-full flex-col overflow-hidden rounded-xl border bg-surface shadow-sm transition-shadow hover:shadow-md ${
+        dragging ? "border-accent ring-2 ring-accent/30" : "border-line"
+      }`}
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        className={`glass flex h-full w-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow group-hover/module:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
-          dragPos ? "shadow-[0_8px_24px_rgba(0,0,0,0.10)]" : ""
-        }`}
+      {/* Header — drag handle + hover-revealed controls */}
+      <div
+        onPointerDown={(e) => {
+          if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+          if (e.button !== 0) return;
+          onDragStart();
+          const up = () => {
+            onDragEnd();
+            window.removeEventListener("pointerup", up);
+          };
+          window.addEventListener("pointerup", up);
+        }}
+        className="flex shrink-0 cursor-grab touch-none select-none items-center gap-2 border-b border-line px-3 py-2 active:cursor-grabbing"
       >
-        {/* Header — drag handle + hover-revealed controls */}
+        <GripVertical className="h-3.5 w-3.5 shrink-0 text-faint opacity-0 transition-opacity group-hover/module:opacity-100" />
+        <Icon className="h-4 w-4 shrink-0 text-muted" />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+          {def.title}
+        </span>
+
         <div
-          onPointerDown={onHeaderPointerDown}
-          className={`flex touch-none select-none items-center gap-2 border-b border-line px-3 py-2 ${
-            dragPos ? "cursor-grabbing" : "cursor-grab"
-          }`}
+          ref={menuRef}
+          data-no-drag
+          className="relative opacity-0 transition-opacity group-hover/module:opacity-100"
         >
-          <GripVertical className="h-3.5 w-3.5 shrink-0 text-faint opacity-0 transition-opacity group-hover/module:opacity-100" />
-          <Icon className="h-4 w-4 shrink-0 text-muted" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
-            {def.title}
-          </span>
-
-          <div ref={menuRef} data-no-drag className="relative opacity-0 transition-opacity group-hover/module:opacity-100">
-            <button
-              aria-label={t("module.options")}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((o) => !o)}
-              className="rounded p-1 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
+          <button
+            aria-label={t("module.options")}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className="rounded p-1 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-md border border-line bg-surface py-1 shadow-lg"
             >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-            {menuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-md border border-line bg-surface py-1 shadow-lg"
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRemove();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger transition-colors hover:bg-danger-soft"
               >
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onRemove();
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger transition-colors hover:bg-danger-soft"
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> {t("module.remove")}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Content — kept on a solid surface so dense text stays legible even
-            when the panel uses the translucent liquid-glass treatment. */}
-        <div className="min-h-0 flex-1 overflow-auto bg-surface p-3">
-          {Content ? (
-            <Content />
-          ) : (
-            <div className="flex h-full items-center justify-center text-center text-sm text-faint">
-              {t("common.comingSoon")}
+                <Trash2 className="h-3.5 w-3.5" /> {t("module.remove")}
+              </button>
             </div>
           )}
         </div>
-      </motion.div>
-    </Rnd>
+      </div>
+
+      {/* Content */}
+      <div className="min-h-0 flex-1 overflow-auto p-3">
+        {Content ? (
+          <Content />
+        ) : (
+          <div className="flex h-full items-center justify-center text-center text-sm text-faint">
+            {t("common.comingSoon")}
+          </div>
+        )}
+      </div>
+
+      {/* Resize handles (discrete steps), revealed on hover. */}
+      {/* Right edge → width (columns) */}
+      <div
+        data-no-drag
+        onPointerDown={startResize("x")}
+        role="separator"
+        aria-label="Resize width"
+        className="absolute inset-y-3 right-0 w-2 cursor-ew-resize opacity-0 transition-opacity group-hover/module:opacity-100"
+      >
+        <div className="ml-auto h-full w-0.5 rounded-full bg-line-strong" />
+      </div>
+      {/* Bottom edge → height (rows) */}
+      <div
+        data-no-drag
+        onPointerDown={startResize("y")}
+        role="separator"
+        aria-label="Resize height"
+        className="absolute inset-x-3 bottom-0 h-2 cursor-ns-resize opacity-0 transition-opacity group-hover/module:opacity-100"
+      >
+        <div className="mx-auto h-0.5 w-8 rounded-full bg-line-strong" />
+      </div>
+      {/* Bottom-right corner → both */}
+      <div
+        data-no-drag
+        onPointerDown={startResize("xy")}
+        role="separator"
+        aria-label="Resize"
+        className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize opacity-0 transition-opacity group-hover/module:opacity-100"
+      >
+        <div className="absolute bottom-1 right-1 h-2 w-2 rounded-br-sm border-b-2 border-r-2 border-line-strong" />
+      </div>
+    </motion.div>
   );
 }

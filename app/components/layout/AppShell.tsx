@@ -41,7 +41,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         onClick={() => setSidebarOpen(true)}
         aria-label={t("app.openSidebar")}
         aria-expanded={sidebarOpen}
-        className="glass fixed bottom-[4.5rem] left-3 z-40 rounded-full border border-line bg-surface p-2.5 text-muted shadow-lg transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 md:hidden"
+        className="fixed bottom-[4.5rem] left-3 z-40 rounded-full border border-line bg-surface p-2.5 text-muted shadow-lg transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 md:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>

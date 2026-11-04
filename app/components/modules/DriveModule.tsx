@@ -9,6 +9,7 @@ import {
   Trash2,
   HardDrive,
   LogIn,
+  ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "@/app/components/auth/AuthProvider";
 import {
@@ -37,6 +38,15 @@ function iconFor(mimeType: string) {
   return FileIcon;
 }
 
+/**
+ * Google Drive's official embed URL for inline preview of a file (works for
+ * both PDFs and images via Drive's own viewer). Requires the viewing user to
+ * have access to the file in the browser's Google session.
+ */
+function previewUrl(fileId: string): string {
+  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+}
+
 function loadRecent(): DriveFile[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -62,6 +72,18 @@ export default function DriveModule() {
   const [hydrated, setHydrated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The file currently shown in the inline preview modal, or null.
+  const [preview, setPreview] = useState<DriveFile | null>(null);
+
+  // Close the preview modal on Escape.
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreview(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [preview]);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -138,6 +160,44 @@ export default function DriveModule() {
 
   const pickerReady = isPickerConfigured();
 
+  // Inline preview: swap the module's content for the Drive embed viewer,
+  // filling the module's own bounds (no overlay / separate window).
+  if (preview) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="mb-2 flex items-center gap-1.5">
+          <button
+            onClick={() => setPreview(null)}
+            aria-label="Back to files"
+            title="Back to files"
+            className="rounded-md p-1 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+            {preview.name}
+          </span>
+          <a
+            href={preview.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open in new tab"
+            title="Open in new tab"
+            className="shrink-0 rounded-md p-1 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+        <iframe
+          src={previewUrl(preview.id)}
+          title={preview.name}
+          className="min-h-0 flex-1 rounded-md border border-line bg-white"
+          allow="autoplay"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="mb-2 flex items-center gap-2">
@@ -176,12 +236,10 @@ export default function DriveModule() {
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-2 text-muted">
                     <Icon className="h-4 w-4" />
                   </span>
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="min-w-0 flex-1"
-                    title={f.name}
+                  <button
+                    onClick={() => setPreview(f)}
+                    className="min-w-0 flex-1 text-left"
+                    title={`Preview ${f.name}`}
                   >
                     <span className="block truncate text-sm text-text">
                       {f.name}
@@ -193,7 +251,7 @@ export default function DriveModule() {
                           ? "PDF"
                           : "File"}
                     </span>
-                  </a>
+                  </button>
                   <a
                     href={f.url}
                     target="_blank"

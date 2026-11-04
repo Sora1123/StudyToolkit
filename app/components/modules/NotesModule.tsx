@@ -1,71 +1,63 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Eye, Pencil, SplitSquareHorizontal } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Check } from "lucide-react";
 import { useSettings } from "@/app/components/settings/SettingsProvider";
-import MarkdownView from "./notes/MarkdownView";
-import LatexView from "./notes/LatexView";
 
 /**
- * Quick Notes — a scratchpad with live Markdown/LaTeX rendering, persisted to
- * localStorage. Content auto-compiles into a preview as you type; you can
- * switch between edit-only, split, and preview-only layouts, and choose whether
- * the document is interpreted as Markdown (with inline `$…$` math) or LaTeX.
+ * Quick Notes — a Markdown scratchpad with true in-place live preview.
+ *
+ * The editor renders Markdown formatting and inline `$…$` / block `$$…$$` math
+ * as you type (no separate preview pane), persisting to localStorage with a
+ * debounced autosave. The CodeMirror editor is client-only, so it's loaded via
+ * a dynamic import with SSR disabled.
  */
 
-type DocMode = "markdown" | "latex";
-type ViewMode = "edit" | "split" | "preview";
+const MarkdownEditor = dynamic(() => import("./notes/MarkdownEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-faint">
+      Loading editor…
+    </div>
+  ),
+});
 
-interface NotesDoc {
-  content: string;
-  mode: DocMode;
-  view: ViewMode;
-}
-
-const STORAGE_KEY = "studytoolkit.quicknotes.v2";
-// Legacy key: a plain string of note text (pre-Markdown/LaTeX upgrade).
+const STORAGE_KEY = "studytoolkit.quicknotes.v3";
+// Prior keys we migrate from: v2 stored {content,mode,view}; the original
+// stored a plain string of note text.
+const V2_KEY = "studytoolkit.quicknotes.v2";
 const LEGACY_KEY = "studytoolkit.quicknotes";
 
-const PLACEHOLDER: Record<DocMode, string> = {
-  markdown:
-    "# Study notes\n\nWrite **Markdown** with inline math like $E = mc^2$.\n\n$$\n\\int_0^1 x^2 \\, dx = \\frac{1}{3}\n$$",
-  latex:
-    "\\section{Derivatives}\n\n\\frac{d}{dx} e^x = e^x\n\n\\begin{aligned}\n(f g)' &= f' g + f g'\n\\end{aligned}",
-};
+const PLACEHOLDER =
+  "# Study notes\n\nWrite **Markdown** with inline math like $E = mc^2$.\n\n$$\n\\int_0^1 x^2 \\, dx = \\frac{1}{3}\n$$";
 
-function loadDoc(): NotesDoc {
-  const fallback: NotesDoc = { content: "", mode: "markdown", view: "split" };
+function loadContent(): string {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<NotesDoc>;
-      return {
-        content: typeof parsed.content === "string" ? parsed.content : "",
-        mode: parsed.mode === "latex" ? "latex" : "markdown",
-        view:
-          parsed.view === "edit" || parsed.view === "preview"
-            ? parsed.view
-            : "split",
-      };
+    const v3 = window.localStorage.getItem(STORAGE_KEY);
+    if (v3 !== null) return v3;
+    // Migrate v2 ({content,mode,view}) → plain content.
+    const v2 = window.localStorage.getItem(V2_KEY);
+    if (v2 !== null) {
+      try {
+        const parsed = JSON.parse(v2) as { content?: unknown };
+        if (typeof parsed.content === "string") return parsed.content;
+      } catch {
+        /* fall through */
+      }
     }
-    // Migrate legacy plain-text notes, if any.
+    // Migrate original plain-string notes.
     const legacy = window.localStorage.getItem(LEGACY_KEY);
-    if (legacy !== null) {
-      return { ...fallback, content: legacy };
-    }
+    if (legacy !== null) return legacy;
   } catch {
     /* ignore */
   }
-  return fallback;
+  return "";
 }
 
 export default function NotesModule() {
   const { settings } = useSettings();
-  const [doc, setDoc] = useState<NotesDoc>({
-    content: "",
-    mode: "markdown",
-    view: "split",
-  });
+  const [content, setContent] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState(true);
   const [justSaved, setJustSaved] = useState(false);
@@ -74,7 +66,7 @@ export default function NotesModule() {
   // Hydrate once on mount.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    setDoc(loadDoc());
+    setContent(loadContent());
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -82,9 +74,9 @@ export default function NotesModule() {
   // Debounced autosave after hydration.
   useEffect(() => {
     if (!hydrated || saved) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(doc));
+        window.localStorage.setItem(STORAGE_KEY, content);
         setSaved(true);
         setJustSaved(true);
         if (savedTimer.current) clearTimeout(savedTimer.current);
@@ -93,98 +85,33 @@ export default function NotesModule() {
         /* ignore */
       }
     }, 500);
-    return () => clearTimeout(t);
-  }, [doc, saved, hydrated]);
-
-  const patch = (p: Partial<NotesDoc>) => {
-    setDoc((d) => ({ ...d, ...p }));
-    setSaved(false);
-  };
-
-  const { content, mode, view } = doc;
+    return () => clearTimeout(timer);
+  }, [content, saved, hydrated]);
 
   const count =
     settings.notesUnit === "words"
       ? `${content.trim() ? content.trim().split(/\s+/).length : 0} words`
       : `${content.length} chars`;
 
-  const showEditor = view === "edit" || view === "split";
-  const showPreview = view === "preview" || view === "split";
-
-  const Preview = mode === "latex" ? LatexView : MarkdownView;
-
-  const viewButtons: { value: ViewMode; icon: typeof Eye; label: string }[] = [
-    { value: "edit", icon: Pencil, label: "Edit" },
-    { value: "split", icon: SplitSquareHorizontal, label: "Split" },
-    { value: "preview", icon: Eye, label: "Preview" },
-  ];
-
   return (
     <div className="flex h-full flex-col">
-      {/* Toolbar: doc mode + view layout */}
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex rounded-md bg-surface-2 p-0.5 text-xs">
-          {(["markdown", "latex"] as DocMode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => patch({ mode: m })}
-              className={`rounded px-2 py-0.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                mode === m
-                  ? "bg-surface text-accent shadow-sm"
-                  : "text-muted hover:text-text"
-              }`}
-            >
-              {m === "markdown" ? "Markdown" : "LaTeX"}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex rounded-md bg-surface-2 p-0.5">
-          {viewButtons.map(({ value, icon: Icon, label }) => (
-            <button
-              key={value}
-              onClick={() => patch({ view: value })}
-              aria-label={label}
-              title={label}
-              aria-pressed={view === value}
-              className={`rounded p-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                view === value
-                  ? "bg-surface text-accent shadow-sm"
-                  : "text-muted hover:text-text"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Editor / preview panes */}
-      <div className="flex min-h-0 flex-1 gap-2">
-        {showEditor && (
-          <textarea
+      <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-line bg-surface-2/40 px-3 py-1 focus-within:border-accent focus-within:bg-surface">
+        {hydrated ? (
+          <MarkdownEditor
             value={content}
-            onChange={(e) => patch({ content: e.target.value })}
-            placeholder={PLACEHOLDER[mode]}
-            aria-label="Notes editor"
-            spellCheck={mode === "markdown"}
-            className={`min-h-0 resize-none rounded-md border border-line bg-surface-2/50 p-3 font-mono text-[13px] leading-relaxed text-text outline-none transition-colors placeholder:text-faint focus:border-accent focus:bg-surface ${
-              view === "split" ? "w-1/2" : "w-full"
-            }`}
+            onChange={(v) => {
+              setContent(v);
+              setSaved(false);
+            }}
+            placeholder={PLACEHOLDER}
           />
-        )}
-        {showPreview && (
-          <div
-            className={`no-scrollbar min-h-0 overflow-y-auto rounded-md border border-line bg-surface p-3 ${
-              view === "split" ? "w-1/2" : "w-full"
-            }`}
-          >
-            <Preview source={content} />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-faint">
+            Loading…
           </div>
         )}
       </div>
 
-      {/* Footer: count + save status */}
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-faint">
         <span>{count}</span>
         <span

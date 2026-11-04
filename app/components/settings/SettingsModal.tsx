@@ -13,20 +13,15 @@ import {
 import {
   ACCENTS,
   Accent,
-  DASHBOARD_PRESETS,
-  DashboardSize,
   FONT_FAMILIES,
   FONT_SIZES,
   FontFamily,
   FontSize,
   NotesUnit,
   Theme,
-  ZOOM_MAX,
-  ZOOM_MIN,
   useSettings,
 } from "./SettingsProvider";
 import { useWorkspaceContext } from "@/app/components/workspace/WorkspaceProvider";
-import { MODULES, ModuleType } from "@/app/components/workspace/modules.registry";
 import { WorkspaceModule } from "@/app/components/workspace/useWorkspace";
 import {
   LANGUAGES,
@@ -69,35 +64,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-        checked ? "bg-accent" : "bg-line-strong"
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-          checked ? "translate-x-[18px]" : "translate-x-0.5"
-        }`}
-      />
-    </button>
-  );
-}
-
 // Segmented control.
 function Segmented<T extends string>({
   value,
@@ -127,10 +93,6 @@ function Segmented<T extends string>({
   );
 }
 
-function isModuleType(t: string): t is ModuleType {
-  return t in MODULES;
-}
-
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { settings, update, reset } = useSettings();
   const t = useT();
@@ -149,56 +111,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   }, [open, onClose]);
 
   if (!open) return null;
-
-  const sizeKind = settings.dashboardSize.kind;
-  const sizeValue =
-    settings.dashboardSize.kind === "fit"
-      ? "fit"
-      : settings.dashboardSize.kind === "custom"
-        ? "custom"
-        : `${settings.dashboardSize.width}x${settings.dashboardSize.height}`;
-
-  const onSizeSelect = (value: string) => {
-    if (value === "fit") {
-      update({ dashboardSize: { kind: "fit" } });
-    } else if (value === "custom") {
-      const base =
-        settings.dashboardSize.kind !== "fit"
-          ? settings.dashboardSize
-          : { width: 1600, height: 1000 };
-      update({
-        dashboardSize: {
-          kind: "custom",
-          width: base.width,
-          height: base.height,
-        },
-      });
-    } else {
-      const preset = DASHBOARD_PRESETS.find(
-        (p) => `${p.width}x${p.height}` === value,
-      );
-      if (preset) {
-        update({
-          dashboardSize: {
-            kind: "preset",
-            width: preset.width,
-            height: preset.height,
-          },
-        });
-      }
-    }
-  };
-
-  const setCustom = (dim: "width" | "height", raw: number) => {
-    if (settings.dashboardSize.kind === "fit") return;
-    const next: DashboardSize = {
-      kind: "custom",
-      width: settings.dashboardSize.width,
-      height: settings.dashboardSize.height,
-      [dim]: Math.max(320, raw || 0),
-    } as DashboardSize;
-    update({ dashboardSize: next });
-  };
 
   const exportLayout = () => {
     const data = {
@@ -231,29 +143,9 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         throw new Error("No modules array found.");
       }
 
-      const validModules: WorkspaceModule[] = rawModules
-        .filter(
-          (m): m is WorkspaceModule =>
-            !!m &&
-            typeof m === "object" &&
-            typeof (m as WorkspaceModule).id === "string" &&
-            typeof (m as WorkspaceModule).type === "string" &&
-            isModuleType((m as WorkspaceModule).type) &&
-            !!(m as WorkspaceModule).layout,
-        )
-        .map((m) => ({
-          id: m.id,
-          type: m.type,
-          layout: {
-            x: Number(m.layout.x) || 0,
-            y: Number(m.layout.y) || 0,
-            width: Number(m.layout.width) || MODULES[m.type].defaultSize.width,
-            height:
-              Number(m.layout.height) || MODULES[m.type].defaultSize.height,
-          },
-        }));
-
-      workspace.replaceAll(validModules);
+      // replaceAll normalizes each entry to the current layout shape
+      // ({span, height, order}) and drops anything invalid.
+      workspace.replaceAll(rawModules as WorkspaceModule[]);
       if (parsed.settings && typeof parsed.settings === "object") {
         update(parsed.settings);
       }
@@ -275,7 +167,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="glass relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+      <div className="relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <h2 className="text-sm font-semibold text-text">{t("settings.title")}</h2>
           <button
@@ -355,22 +247,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 />
               </Field>
 
-              <Field label={t("settings.deskTexture")}>
-                <Toggle
-                  label={t("settings.deskTexture")}
-                  checked={settings.deskTexture}
-                  onChange={(v) => update({ deskTexture: v })}
-                />
-              </Field>
-
-              <Field label={t("settings.liquidGlass")}>
-                <Toggle
-                  label={t("settings.liquidGlass")}
-                  checked={settings.liquidGlass}
-                  onChange={(v) => update({ liquidGlass: v })}
-                />
-              </Field>
-
               <Field label={t("settings.language")}>
                 <Segmented<Language>
                   value={settings.language}
@@ -388,81 +264,6 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           <section>
             <SectionTitle>{t("settings.section.workspace")}</SectionTitle>
             <div className="divide-y divide-line">
-              <Field label={t("settings.dashboardSize")}>
-                <select
-                  value={sizeValue}
-                  onChange={(e) => onSizeSelect(e.target.value)}
-                  className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
-                >
-                  <option value="fit">{t("settings.dashboardSize.fit")}</option>
-                  {DASHBOARD_PRESETS.map((p) => (
-                    <option key={p.label} value={`${p.width}x${p.height}`}>
-                      {p.label}
-                    </option>
-                  ))}
-                  <option value="custom">{t("settings.dashboardSize.custom")}</option>
-                </select>
-              </Field>
-
-              {sizeKind === "custom" &&
-                settings.dashboardSize.kind === "custom" && (
-                  <div className="flex items-center justify-end gap-2 py-2">
-                    <input
-                      type="number"
-                      min={320}
-                      value={settings.dashboardSize.width}
-                      onChange={(e) =>
-                        setCustom("width", Number(e.target.value))
-                      }
-                      aria-label="Custom width"
-                      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
-                    />
-                    <span className="text-xs text-faint">×</span>
-                    <input
-                      type="number"
-                      min={320}
-                      value={settings.dashboardSize.height}
-                      onChange={(e) =>
-                        setCustom("height", Number(e.target.value))
-                      }
-                      aria-label="Custom height"
-                      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
-                    />
-                  </div>
-                )}
-
-              <Field label={t("settings.snapping")}>
-                <Toggle
-                  label={t("settings.snapping")}
-                  checked={settings.snapping}
-                  onChange={(v) => update({ snapping: v })}
-                />
-              </Field>
-
-              <Field label={t("settings.defaultZoom")}>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    min={Math.round(ZOOM_MIN * 100)}
-                    max={Math.round(ZOOM_MAX * 100)}
-                    step={10}
-                    value={Math.round(settings.defaultZoom * 100)}
-                    onChange={(e) => {
-                      const pct = Number(e.target.value);
-                      if (!Number.isFinite(pct)) return;
-                      const frac = Math.min(
-                        ZOOM_MAX,
-                        Math.max(ZOOM_MIN, pct / 100),
-                      );
-                      update({ defaultZoom: frac });
-                    }}
-                    aria-label={t("settings.defaultZoom")}
-                    className="w-16 rounded-md border border-line bg-surface px-2 py-1 text-xs text-text outline-none focus:border-accent"
-                  />
-                  <span className="text-xs text-faint">%</span>
-                </div>
-              </Field>
-
               <div className="flex items-center justify-between gap-4 py-2">
                 <span className="text-sm text-text">{t("settings.resetWorkspace")}</span>
                 {confirmReset ? (

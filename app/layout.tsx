@@ -31,12 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     var raw = localStorage.getItem("studytoolkit.settings.v1");
     var theme = "system";
     var lang = "en";
-    var glass = false;
     if (raw) {
       var s = JSON.parse(raw);
       if (s && typeof s.theme === "string") theme = s.theme;
       if (s && typeof s.language === "string") lang = s.language;
-      if (s && typeof s.liquidGlass === "boolean") glass = s.liquidGlass;
     }
     var prefersDark =
       window.matchMedia &&
@@ -44,7 +42,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     var isDark = theme === "dark" || (theme === "system" && prefersDark);
     var root = document.documentElement;
     root.classList.toggle("dark", isDark);
-    root.classList.toggle("liquid-glass", glass);
     root.setAttribute("lang", lang);
   } catch (e) {}
 })();

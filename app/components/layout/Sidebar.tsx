@@ -69,7 +69,7 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
         onMouseEnter={onOpen}
         onMouseLeave={onClose}
         style={{ width: open ? PANEL_WIDTH : RAIL_WIDTH }}
-        className={`no-scrollbar glass fixed inset-y-0 left-0 z-50 flex flex-col border-r border-line bg-surface transition-[width,transform] duration-200 ease-out ${
+        className={`no-scrollbar fixed inset-y-0 left-0 z-50 flex flex-col border-r border-line bg-surface transition-[width,transform] duration-200 ease-out ${
           open ? "shadow-xl" : "shadow-sm"
         } ${
           // Mobile: collapse fully off-screen unless expanded (bottom nav is the
@@ -77,20 +77,28 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        {/* Brand — icon always visible; wordmark fades in when expanded. */}
-        <div className="flex items-center gap-2 px-4 py-4">
-          <Image
-            src="/StudyToolkit.svg"
-            alt=""
-            aria-hidden="true"
-            width={28}
-            height={28}
-            className="h-7 w-7 shrink-0 dark:invert"
-            priority
-          />
+        {/* Brand — icon always visible; wordmark fades in when expanded.
+            Fixed row height + centered fixed-size icon box so the logo never
+            gets squeezed or resized between collapsed/expanded states. */}
+        <div
+          className={`flex h-14 shrink-0 items-center ${
+            open ? "gap-2 px-4" : "justify-center px-0"
+          }`}
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+            <Image
+              src="/StudyToolkit.svg"
+              alt=""
+              aria-hidden="true"
+              width={28}
+              height={28}
+              className="h-7 w-7 dark:invert"
+              priority
+            />
+          </span>
           <span
             className={`truncate text-sm font-semibold tracking-tight text-text transition-opacity duration-150 ${
-              open ? "opacity-100" : "pointer-events-none opacity-0"
+              open ? "opacity-100" : "hidden opacity-0"
             }`}
           >
             {t("app.name")}
@@ -98,15 +106,15 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
         </div>
 
         {/* Search + Notifications */}
-        <div className="space-y-2 px-3 pb-2">
+        <div className="space-y-1 px-2 pb-2 border-b border-line">
           {open ? (
-            <div className="relative flex h-9 items-center">
-              <Search className="pointer-events-none absolute left-2.5 h-4 w-4 text-faint" />
+            <div className="relative flex h-9 items-center px-1">
+              <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-faint" />
               <input
                 type="search"
                 placeholder={t("app.search")}
                 aria-label={t("app.searchAria")}
-                className="h-full w-full rounded-md border border-line bg-surface-2 pl-8 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent focus:bg-surface"
+                className="h-full w-full rounded-md border border-line bg-surface-2 pl-9 pr-3 text-sm outline-none placeholder:text-faint focus:border-accent focus:bg-surface"
               />
             </div>
           ) : (
@@ -114,20 +122,20 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
               aria-label={t("app.search")}
               title={t("app.search")}
               onClick={onOpen}
-              className="flex h-9 w-full items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="flex h-9 w-full items-center rounded-md px-3 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <Search className="h-4 w-4" />
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                <Search className="h-4 w-4" />
+              </span>
             </button>
           )}
 
           <button
             aria-label={t("app.notifications")}
             title={open ? undefined : t("app.notifications")}
-            className={`relative flex w-full items-center rounded-md py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 ${
-              open ? "gap-2.5 px-2.5" : "justify-center"
-            }`}
+            className="flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <span className="relative shrink-0">
+            <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
               <Bell className="h-4 w-4" />
               <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-accent" />
             </span>
@@ -141,7 +149,7 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
           </button>
         </div>
 
-        <nav className="no-scrollbar flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
+        <nav className="no-scrollbar flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
           {navItems.map(({ href, label, labelKey, icon: Icon, implemented }, i) => {
             const active = isActive(href, label);
             return (
@@ -151,15 +159,15 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
                 onClick={onClose}
                 aria-current={active ? "page" : undefined}
                 title={open ? undefined : t(labelKey)}
-                className={`flex items-center rounded-md py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                  open ? "gap-2.5 px-2.5" : "justify-center"
-                } ${
+                className={`flex h-9 items-center gap-2.5 rounded-md px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
                   active
                     ? "bg-accent-soft font-medium text-accent"
                     : "text-muted hover:bg-surface-2 hover:text-text"
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                  <Icon className="h-4 w-4" />
+                </span>
                 <span
                   className={`truncate transition-opacity duration-150 ${
                     open ? "opacity-100" : "hidden opacity-0"
@@ -177,17 +185,17 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
           })}
         </nav>
 
-        <div className="border-t border-line p-3">
+        <div className="border-t border-line p-2">
           {/* Settings — sits directly above the profile block. */}
           <button
             onClick={onOpenSettings}
             aria-label={t("app.settings")}
             title={open ? undefined : t("app.settings")}
-            className={`flex w-full items-center rounded-md py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 ${
-              open ? "gap-2.5 px-2.5" : "justify-center"
-            }`}
+            className="flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <Settings className="h-4 w-4 shrink-0" />
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+              <Settings className="h-4 w-4" />
+            </span>
             <span
               className={`truncate transition-opacity duration-150 ${
                 open ? "opacity-100" : "hidden opacity-0"
@@ -197,31 +205,30 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
             </span>
           </button>
 
-          {/* Account — Google sign-in / profile, or local display name. */}
+          {/* Account — Google sign-in / profile, or local display name.
+              Uses the same h-9 row + fixed icon slot as everything else so the
+              icon never moves between signed-in/out or collapsed/expanded. */}
           {configured && !user ? (
-            // Configured but signed out: offer sign-in.
             <button
               onClick={signIn}
               aria-label={t("app.signIn")}
               title={open ? undefined : t("app.signIn")}
-              className={`mt-1 flex w-full items-center rounded-md py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                open ? "gap-2.5 px-2.5" : "justify-center"
-              }`}
+              className="mt-0.5 flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <LogIn className="h-4 w-4 shrink-0" />
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                <LogIn className="h-4 w-4" />
+              </span>
               <span
-                className={`truncate ${open ? "opacity-100" : "hidden"}`}
+                className={`truncate transition-opacity duration-150 ${
+                  open ? "opacity-100" : "hidden opacity-0"
+                }`}
               >
                 {t("app.signIn")}
               </span>
             </button>
           ) : (
-            <div
-              className={`mt-1 flex h-11 items-center rounded-md ${
-                open ? "gap-2.5 px-2.5" : "justify-center"
-              }`}
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 text-muted">
+            <div className="mt-0.5 flex h-11 items-center gap-2.5 rounded-md pl-1.5 pr-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
                 {user?.picture ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -230,14 +237,18 @@ export default function Sidebar({ open, onOpen, onClose, onOpenSettings }: Sideb
                     aria-hidden="true"
                     width={28}
                     height={28}
-                    className="h-7 w-7 object-cover"
+                    className="h-7 w-7 max-w-none rounded-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <CircleUser className="h-5 w-5" />
+                  <CircleUser className="h-5 w-5 max-w-none" />
                 )}
               </span>
-              <div className={`min-w-0 leading-tight ${open ? "" : "hidden"}`}>
+              <div
+                className={`min-w-0 leading-tight transition-opacity duration-150 ${
+                  open ? "opacity-100" : "hidden opacity-0"
+                }`}
+              >
                 <p className="truncate text-sm font-medium text-text">
                   {user?.name || settings.displayName || t("common.student")}
                 </p>

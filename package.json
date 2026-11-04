@@ -9,8 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@codemirror/commands": "6.8.0",
+    "@codemirror/lang-markdown": "6.3.1",
+    "@codemirror/language": "6.10.8",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.36.2",
     "@latex-math/core": "^0.1.2",
     "@latex-math/react": "^1.2.2",
+    "@lezer/common": "1.2.3",
+    "@lezer/highlight": "1.2.1",
+    "@lezer/markdown": "1.4.2",
+    "codemirror": "6.0.1",
     "express": "^5.2.1",
     "lucide-react": "^1.39.0",
     "mathjs": "^15.2.0",
@@ -32,4 +41,3 @@
     "typescript": "^5"
   }
 }
-

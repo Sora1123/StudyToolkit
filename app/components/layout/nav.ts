@@ -58,11 +58,13 @@ export const mobileNavItems: NavItem[] = [
     icon: Layers,
     implemented: true,
   },
+  { href: "/Notes", label: "Notes", labelKey: "nav.notes", icon: StickyNote, implemented: true },
   {
     href: "/PomodoroTimer",
     label: "Timer",
-    labelKey: "nav.timer",
+    labelKey: "nav.timerShort",
     icon: Timer,
     implemented: true,
   },
+  { href: "/Resources", label: "Resources", labelKey: "nav.resources", icon: FolderOpen, implemented: true },
 ];

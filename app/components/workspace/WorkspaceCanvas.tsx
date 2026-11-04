@@ -1,118 +1,82 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { LayoutGrid, Plus, Minus, Maximize } from "lucide-react";
-import Module from "./Module";
+import { useLayoutEffect, useRef, useState } from "react";
+import { LayoutGrid, Plus } from "lucide-react";
+import Module, {
+  ModuleLayout,
+  ROW_UNIT,
+  ROW_GAP,
+  MIN_ROWS,
+} from "./Module";
 import { MODULES } from "./modules.registry";
 import { WorkspaceModule } from "./useWorkspace";
-import { ModuleLayout } from "./Module";
-import { Guides, Rect } from "./snapping";
 import { useT } from "@/app/components/i18n/I18nProvider";
 
 interface WorkspaceCanvasProps {
   modules: WorkspaceModule[];
-  snapping: boolean;
-  /** Initial board zoom (fraction). Also the target for "reset zoom". */
-  defaultZoom: number;
   onLayoutChange: (id: string, layout: ModuleLayout) => void;
   onRemove: (id: string) => void;
+  onReorder: (fromId: string, toId: string) => void;
   onAddFirst: () => void;
 }
 
-const emptyGuides: Guides = { vertical: [], horizontal: [] };
+/** Discrete minimum rows for a module type, honoring its minHeight. */
+function minRowsFor(minHeight: number | undefined, fallback: number): number {
+  const h = minHeight ?? fallback;
+  const rows = Math.round((h + ROW_GAP) / (ROW_UNIT + ROW_GAP));
+  return Math.max(MIN_ROWS, rows);
+}
 
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 2;
-const ZOOM_STEP = 0.1;
+/** Responsive column count matching the grid's Tailwind breakpoints. */
+function columnsForWidth(w: number): number {
+  if (w >= 1280) return 4; // xl
+  if (w >= 1024) return 3; // lg
+  if (w >= 640) return 2; // sm
+  return 1;
+}
 
-const clampZoom = (z: number) => {
-  // Guard against non-finite input (e.g. a wheel event with NaN deltaY during
-  // a fast gesture), which would otherwise propagate to "NaN%".
-  if (!Number.isFinite(z)) return ZOOM_MIN;
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
-};
-
+/**
+ * Dashboard grid — a conventional, Pinterest-style masonry layout. Modules flow
+ * into responsive columns with small uniform gaps (no dot texture, no pan/zoom).
+ * Both dimensions are discrete + draggable: width is a whole number of columns
+ * (up to however many columns fit at the current width), height a whole number
+ * of chunky row tracks. `grid-auto-flow: dense` packs short modules into the
+ * vertical gaps above taller neighbours. Dragging a header reorders.
+ */
 export default function WorkspaceCanvas({
   modules,
-  snapping,
-  defaultZoom,
   onLayoutChange,
   onRemove,
+  onReorder,
   onAddFirst,
 }: WorkspaceCanvasProps) {
-  const [guides, setGuides] = useState<Guides>(emptyGuides);
-  const [zoom, setZoom] = useState(() => clampZoom(defaultZoom));
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const t = useT();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [cols, setCols] = useState(1);
+  const [colWidth, setColWidth] = useState(0);
 
-  const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), []);
-  const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), []);
-  const zoomReset = useCallback(() => {
-    setZoom(clampZoom(defaultZoom));
-    setPan({ x: 0, y: 0 });
-  }, [defaultZoom]);
-
+  // Measure the grid to know the live column count + one column's pixel width,
+  // so a horizontal resize drag can be converted into discrete column steps.
   useLayoutEffect(() => {
-    const el = viewportRef.current;
+    const el = gridRef.current;
     if (!el) return;
-    const measure = () =>
-      setViewport({ width: el.clientWidth, height: el.clientHeight });
+    const measure = () => {
+      const w = el.clientWidth;
+      const c = columnsForWidth(w);
+      setCols(c);
+      // Total width = c*colWidth + (c-1)*gap  ->  solve colWidth.
+      setColWidth((w - (c - 1) * ROW_GAP) / c);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      // Ctrl/Cmd + wheel = zoom the whole board.
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const dir = Math.sign(e.deltaY);
-        // Ignore glitchy gesture events that report a non-finite/zero delta,
-        // which previously turned the zoom (and its "%" readout) into NaN.
-        if (!Number.isFinite(e.deltaY) || dir === 0) return;
-        setZoom((z) => clampZoom(z - dir * ZOOM_STEP));
-        return;
-      }
-
-      const dx = Number.isFinite(e.deltaX) ? e.deltaX : 0;
-      const dy = Number.isFinite(e.deltaY) ? e.deltaY : 0;
-      if (dx === 0 && dy === 0) return;
-
-      // If the wheel is over a scrollable element inside a module (e.g. the
-      // tasks list), let the browser scroll it and never pan the board — even
-      // when it's at its top/bottom edge (no scroll chaining to the board).
-      let node = e.target as HTMLElement | null;
-      while (node && node !== el) {
-        const style = getComputedStyle(node);
-        const overflowY = style.overflowY;
-        const overflowX = style.overflowX;
-        const scrollableY =
-          (overflowY === "auto" || overflowY === "scroll") &&
-          node.scrollHeight > node.clientHeight;
-        const scrollableX =
-          (overflowX === "auto" || overflowX === "scroll") &&
-          node.scrollWidth > node.clientWidth;
-        if (scrollableY || scrollableX) return; // native scroll owns it
-        node = node.parentElement;
-      }
-
-      // Otherwise pan the board.
-      e.preventDefault();
-      setPan((p) => ({ x: p.x - dx, y: p.y - dy }));
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
   if (modules.length === 0) {
     return (
-      <div className="desk-canvas flex h-full min-h-[60vh] flex-1 items-center justify-center rounded-xl border border-dashed border-line-strong">
+      <div className="flex h-full min-h-[60vh] flex-1 items-center justify-center rounded-xl border border-dashed border-line-strong">
         <div className="max-w-sm px-6 text-center">
           <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-accent shadow-sm">
             <LayoutGrid className="h-6 w-6" />
@@ -134,115 +98,49 @@ export default function WorkspaceCanvas({
     );
   }
 
-  // Board = exactly the window size. No overflow — everything stays within the
-  // visible window; modules cannot be placed outside it.
-  const ready = viewport.width > 0;
+  const ordered = [...modules].sort((a, b) => a.layout.order - b.layout.order);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-1 flex-col">
-      {/* Fixed window — clips its contents; nothing renders outside it. */}
-      <div
-        ref={viewportRef}
-        className="no-scrollbar relative flex-1 overflow-hidden rounded-xl border border-line"
-      >
-        {ready && (
+    <div
+      ref={gridRef}
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      style={{
+        gridAutoFlow: "dense",
+        gridAutoRows: `${ROW_UNIT}px`,
+        gap: `${ROW_GAP}px`,
+      }}
+      onPointerUp={() => setDragId(null)}
+    >
+      {ordered.map((m) => {
+        const def = MODULES[m.type];
+        // A module can't span more columns than currently exist.
+        const span = Math.min(m.layout.span, cols);
+        return (
           <div
-            className="relative origin-top-left"
+            key={m.id}
             style={{
-              // Snap the board to a whole number of 22px dot cells so its
-              // right/bottom edges also land on dot lines (the top-left corner
-              // is already the board origin dot). Falls back to the raw size.
-              width: Math.floor(viewport.width / 22) * 22,
-              height: Math.floor(viewport.height / 22) * 22,
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              gridColumn: `span ${span}`,
+              gridRow: `span ${m.layout.rows}`,
             }}
           >
-            {/* Dotted desk texture — oversized so the grid keeps covering the
-                margins that become visible when the board is zoomed in. The
-                inset is a multiple of the 22px dot pitch, so the dot phase
-                stays aligned with the board origin (0,0) and module snapping. */}
-            <div
-              aria-hidden
-              className="desk-canvas pointer-events-none absolute"
-              style={{ inset: "-2200px" }}
+            <Module
+              def={def}
+              layout={m.layout}
+              minRows={minRowsFor(def.minHeight, def.defaultSize.height)}
+              maxCols={cols}
+              colWidth={colWidth}
+              dragging={dragId === m.id}
+              onLayoutChange={(layout) => onLayoutChange(m.id, layout)}
+              onRemove={() => onRemove(m.id)}
+              onDragStart={() => setDragId(m.id)}
+              onDragEnter={() => {
+                if (dragId && dragId !== m.id) onReorder(dragId, m.id);
+              }}
+              onDragEnd={() => setDragId(null)}
             />
-            {modules.map((m) => {
-              const others: Rect[] = modules
-                .filter((o) => o.id !== m.id)
-                .map((o) => ({ ...o.layout }));
-              return (
-                <Module
-                  key={m.id}
-                  def={MODULES[m.type]}
-                  layout={m.layout}
-                  others={others}
-                  snapping={snapping}
-                  scale={zoom}
-                  onLayoutChange={(layout) => onLayoutChange(m.id, layout)}
-                  onRemove={() => onRemove(m.id)}
-                  onGuides={setGuides}
-                />
-              );
-            })}
-
-            {guides.vertical.map((x, i) => (
-              <div
-                key={`v-${i}`}
-                className="pointer-events-none absolute inset-y-0 z-[60] w-px bg-accent/70"
-                style={{ left: x }}
-              />
-            ))}
-            {guides.horizontal.map((y, i) => (
-              <div
-                key={`h-${i}`}
-                className="pointer-events-none absolute inset-x-0 z-[60] h-px bg-accent/70"
-                style={{ top: y }}
-              />
-            ))}
           </div>
-        )}
-      </div>
-
-      {/* Zoom controls — bottom center of the board. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center">
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-lg border border-line bg-surface/95 p-0.5 shadow-sm backdrop-blur">
-          <button
-            onClick={zoomOut}
-            disabled={zoom <= ZOOM_MIN}
-            aria-label={t("zoom.out")}
-            title={t("zoom.out")}
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={zoomReset}
-            aria-label={t("zoom.reset")}
-            title={t("zoom.reset")}
-            className="min-w-11 rounded-md px-1.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-          <button
-            onClick={zoomIn}
-            disabled={zoom >= ZOOM_MAX}
-            aria-label={t("zoom.in")}
-            title={t("zoom.in")}
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <div className="mx-0.5 h-4 w-px bg-line" />
-          <button
-            onClick={zoomReset}
-            aria-label={t("zoom.fit")}
-            title={t("zoom.fit")}
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Maximize className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }
